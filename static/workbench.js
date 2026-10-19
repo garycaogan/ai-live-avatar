@@ -144,6 +144,8 @@
     idleRows: null,
     idleFor: null,
     idleDirty: false,
+    topicFor: null,
+    topicDirty: false,
     kwRows: null,
     kwDirty: false,
     schedDirty: false,
@@ -1200,7 +1202,7 @@
     try { return await job; } finally { S.inflight.delete(tag); }
   }
   async function hasUnsaved() {
-    if (!S.pfDirty && !S.idleDirty) return false;
+    if (!S.pfDirty && !S.idleDirty && !S.topicDirty) return false;
     const ok = await confirmBox({ title: "放弃没保存的修改？", message: "当前角色有修改还没保存，切换后会丢掉。", ok: "放弃修改", danger: true });
     return !ok;
   }
@@ -1213,6 +1215,8 @@
     setPfDirty(false);
     setIdleDirty(false);
     S.idleFor = null;
+    setTopicDirty(false);
+    S.topicFor = null;
     S.pfFilledFor = null;
     S.wdEditing = null;
     renderCtx();
@@ -1738,6 +1742,9 @@
 
   // ---------------------------------------------------------------- 动作
   function setIdleDirty(v) { S.idleDirty = v; $("idleDirty").hidden = !v; }
+  function setTopicDirty(v) { S.topicDirty = v; $("topicDirty").hidden = !v; }
+  function topicLines() { return $("topicText").value.split("\n").map((t) => t.trim()).filter(Boolean); }
+  function renderTopicCount() { $("topicCount").textContent = `${topicLines().length} 条`; }
   function setKwDirty(v) { S.kwDirty = v; $("kwDirty").hidden = !v; }
   async function loadActions() {
     try { const d = await api.get("/api/actions"); S.actions = d.actions || []; S.actionsErr = null; }
@@ -1821,6 +1828,23 @@
     $("idleAdd").disabled = !d || (S.idleRows || []).length >= 20;
     $("idleSave").disabled = !d;
 
+    $("topicSub").textContent = `${key ? `「${profileName(key)}」` : ""}没人发弹幕时从这里挑一个话题开口，全部说完一轮才会重复`;
+    $("topicDefault").hidden = !d || !!d.custom_idle_topics;
+    $("topicRestore").hidden = !d || !d.custom_idle_topics;
+    $("topicInUse").hidden = !key || !inUse(key);
+    if (err) showMsg($("topicMsg"), missingText(err, "冷场话题"), { type: err.missing ? "warn" : "error", retry: () => refreshProfile(key) });
+    else clear($("topicMsg"));
+    if (d && (S.topicFor !== key || !S.topicDirty)) {
+      $("topicText").value = (d.idle_topics || []).join("\n");
+      S.topicFor = key;
+      setTopicDirty(false);
+    } else if (!d) {
+      $("topicText").value = "";
+    }
+    $("topicText").disabled = !d;
+    $("topicSave").disabled = !d;
+    renderTopicCount();
+
     if (S.actionsErr && !S.actions) showMsg($("kwMsg"), missingText(S.actionsErr, "关键词映射"), { type: S.actionsErr.missing ? "warn" : "error", retry: async () => { await loadActions(); renderActions(); } });
     else clear($("kwMsg"));
     if (S.actions && !S.kwDirty) {
@@ -1891,6 +1915,37 @@
       await loadDetail(key);
       renderActions();
     } catch (err) { showMsg($("idleMsg"), `保存失败：${err.message}`); }
+  });
+  $("topicText").addEventListener("input", () => { setTopicDirty(true); renderTopicCount(); });
+  $("topicSave").addEventListener("click", async () => {
+    const key = S.sel;
+    const topics = topicLines();
+    if (!topics.length) { showMsg($("topicMsg"), "至少写一个话题；想用内置那套就点「恢复内置默认」"); return; }
+    const long = topics.findIndex((t) => t.length > 60);
+    if (long >= 0) { showMsg($("topicMsg"), `第 ${long + 1} 条太长了，一条 60 字以内`); return; }
+    if (topics.length > 100) { showMsg($("topicMsg"), "冷场话题最多 100 条"); return; }
+    clear($("topicMsg"));
+    try {
+      const r = await withBusy($("topicSave"), () => api.put(`/api/profiles/${enc(key)}`, { idle_topics: topics }));
+      if (r && r.key === key) S.detail.set(key, r); else await loadDetail(key);
+      setTopicDirty(false);
+      S.topicFor = null;
+      toast(`冷场话题已保存，共 ${topics.length} 条`);
+      renderActions();
+    } catch (err) { showMsg($("topicMsg"), `保存失败：${err.message}`); }
+  });
+  $("topicRestore").addEventListener("click", async () => {
+    const key = S.sel;
+    const ok = await confirmBox({ title: "恢复内置默认的冷场话题？", message: `「${profileName(key)}」自己的这套话题会被删掉，改回内置的通用话题。`, ok: "恢复默认", danger: true });
+    if (!ok) return;
+    try {
+      const r = await withBusy($("topicRestore"), () => api.put(`/api/profiles/${enc(key)}`, { idle_topics: [] }));
+      if (r && r.key === key) S.detail.set(key, r); else await loadDetail(key);
+      setTopicDirty(false);
+      S.topicFor = null;
+      toast("已恢复内置默认的冷场话题");
+      renderActions();
+    } catch (err) { showMsg($("topicMsg"), `恢复失败：${err.message}`); }
   });
   $("kwSave").addEventListener("click", async () => {
     const rows = S.kwRows || [];
@@ -2649,7 +2704,7 @@
   };
 
   window.addEventListener("beforeunload", (e) => {
-    if (S.pfDirty || S.idleDirty || S.kwDirty) { e.preventDefault(); e.returnValue = ""; }
+    if (S.pfDirty || S.idleDirty || S.topicDirty || S.kwDirty) { e.preventDefault(); e.returnValue = ""; }
   });
 
   // ---------------------------------------------------------------- boot

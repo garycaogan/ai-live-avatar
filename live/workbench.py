@@ -25,7 +25,7 @@ from aiohttp import web
 
 from . import router
 from .assets import shrink_to_jpeg
-from .session import IDLE_MOTION
+from .session import IDLE_MOTION, IDLE_TOPICS
 from .wardrobe import OUTFIT_PROMPT, Wardrobe
 
 EVOLINK = "https://api.evolink.ai/v1"
@@ -416,6 +416,8 @@ class Workbench:
                 "persona_text": persona_path.read_text(encoding="utf-8") if persona_path.exists() else "",
                 "idle_motions": p.get("idle_motions") or IDLE_MOTION["motions"],
                 "custom_idle_motions": bool(p.get("idle_motions")),
+                "idle_topics": p.get("idle_topics") or IDLE_TOPICS,
+                "custom_idle_topics": bool(p.get("idle_topics")),
                 "desk_items": p.get("desk_items") or {},
                 "outfits": outfits, "in_use": self.room.profile == key and self.room.status in ("creating", "connecting", "waiting_stage", "live"),
                 "current_outfit": self.room.outfit if self.room.profile == key else None}
@@ -473,6 +475,12 @@ class Workbench:
             p["persona_file"] = persona_rel
         if "idle_motions" in body:
             p["idle_motions"] = self._clean_motions(body["idle_motions"])
+        if "idle_topics" in body:
+            topics = self._clean_topics(body["idle_topics"])
+            if topics:
+                p["idle_topics"] = topics
+            else:
+                p.pop("idle_topics", None)  # back to the built-in set
         if "desk_items" in body:
             desk = {k: str((body["desk_items"] or {}).get(k) or "").strip()[:20] for k in ("drink", "eat")}
             p["desk_items"] = {k: v for k, v in desk.items() if v}
@@ -480,6 +488,24 @@ class Workbench:
         self.room.log("info", f"工作台：{'新建' if creating else '修改'}角色 {p['name']}", profile=key, fields=sorted(body))
         self.room.broadcast("state")
         return self.profile_detail(key)
+
+    @staticmethod
+    def _clean_topics(topics) -> list[str]:
+        if isinstance(topics, str):
+            topics = topics.splitlines()
+        if not isinstance(topics, list):
+            raise WorkbenchError("冷场话题要一行一个")
+        out: list[str] = []
+        for t in topics:
+            t = str(t or "").strip().rstrip("。")
+            if not t or t in out:
+                continue
+            if len(t) > 60:
+                raise WorkbenchError(f"冷场话题太长了：{t[:20]}…（一条 60 字以内）")
+            out.append(t)
+        if len(out) > 100:
+            raise WorkbenchError("冷场话题最多 100 条")
+        return out
 
     @staticmethod
     def _clean_motions(motions) -> list[dict] | None:

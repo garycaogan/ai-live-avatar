@@ -34,8 +34,8 @@
 ## 角色
 
 - `GET /api/profiles` → `{current, profiles:[{key,name,note,image_url,voice,greeting_instruction,outfits_count}]}`
-- `GET /api/profiles/{key}` → `{key,name,note,image_url,voice,greeting_instruction,persona_text,idle_motions:[{name,content,weight,description}],custom_idle_motions,outfits:[{name,aliases[],image_url,base,description,generated}],in_use,current_outfit}`。`custom_idle_motions` 为 false 时 `idle_motions` 是内置默认那套；`in_use` 为 true 表示这个角色正在直播，改动下次开播或换装时生效。
-- `PUT /api/profiles/{key}` body 同上可选字段（name、note、voice、greeting_instruction、persona_text、idle_motions）。`idle_motions: []` 表示恢复内置默认。新建角色时 key 用小写字母数字下划线，额外传 `name`、`base_gallery_id`（素材库里的一张图）和可选的 `base_outfit_name`（底图那套衣服叫什么，默认“日常”）。
+- `GET /api/profiles/{key}` → `{key,name,note,image_url,voice,greeting_instruction,persona_text,idle_motions:[{name,content,weight,description}],custom_idle_motions,idle_topics:[...],custom_idle_topics,outfits:[{name,aliases[],image_url,base,description,generated}],in_use,current_outfit}`。`custom_idle_motions` 为 false 时 `idle_motions` 是内置默认那套，`idle_topics` 同理；`in_use` 为 true 表示这个角色正在直播，改动下次开播或换装时生效。
+- `PUT /api/profiles/{key}` body 同上可选字段（name、note、voice、greeting_instruction、persona_text、idle_motions、idle_topics）。`idle_motions: []`、`idle_topics: []` 表示恢复内置默认。`idle_topics` 是冷场时开口的话题，一条一个，60 字以内，最多 100 条，也可以传一行一个的字符串；每个话题说过一次，要等全部说完一轮才会再出现。新建角色时 key 用小写字母数字下划线，额外传 `name`、`base_gallery_id`（素材库里的一张图）和可选的 `base_outfit_name`（底图那套衣服叫什么，默认“日常”）。
 - `POST /api/profiles/{key}/base {gallery_id, outfit_name?}`：把素材库里的图设为底图（衣柜的 base 也跟着换，`outfit_name` 可顺便改底图那套衣服的名字）
 - `POST /api/profiles/{key}/outfits {name, aliases[], gallery_id}`：把素材库里的图加进衣柜
 - `POST /api/profiles/{key}/outfits/generate {name, description, model, aliases?}` → `{job}`：用底图当参考生成一套新衣服，完成后自动进衣柜
@@ -47,7 +47,7 @@
 
 - `GET /api/actions` → `{actions:[{keywords:[...], action:"..."}]}`：弹幕关键词到动作指令的映射
 - `PUT /api/actions {actions}`
-- 待机小动作在角色的 `idle_motions` 里编辑（见上）
+- 待机小动作在角色的 `idle_motions` 里编辑，冷场话题在 `idle_topics` 里编辑（见上）
 - 测试一个动作：`POST /api/manual {kind:"text_action", content}`
 
 ## 声音

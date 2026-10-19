@@ -28,7 +28,7 @@ import server  # noqa: E402
 from live import router  # noqa: E402
 from live.assets import AssetLibrary, AssetResolver  # noqa: E402
 from live.moderation import Moderator  # noqa: E402
-from live.session import LiveRoom  # noqa: E402
+from live.session import LiveRoom, pick_idle_topic  # noqa: E402
 from live.vidu import ViduClient  # noqa: E402
 from live.workbench import Workbench, add_routes  # noqa: E402
 from test_e2e import serve  # noqa: E402
@@ -185,6 +185,24 @@ class WorkbenchAPI(unittest.IsolatedAsyncioTestCase):
         await self.call("PUT", "/api/profiles/tasha", 400, json={"idle_motions": [{"content": "x" * 100}]})
         reset = await self.call("PUT", "/api/profiles/tasha", json={"idle_motions": []})
         self.assertFalse(reset["custom_idle_motions"])
+
+    async def test_idle_topics_rotate_without_repeats(self):
+        detail = await self.call("GET", "/api/profiles/tasha")
+        self.assertFalse(detail["custom_idle_topics"])
+        topics = [f"说说第{i}件小事" for i in range(9)]
+        detail = await self.call("PUT", "/api/profiles/tasha", json={"idle_topics": "\n".join(topics + ["", topics[0], "说说第9件小事。"])})
+        self.assertTrue(detail["custom_idle_topics"])
+        self.assertEqual(detail["idle_topics"], topics + ["说说第9件小事"])  # blanks, repeats and the full stop dropped
+        await self.call("PUT", "/api/profiles/tasha", 400, json={"idle_topics": ["x" * 61]})
+        used: set = set()
+        picks: list[str] = []
+        for _ in range(len(topics) * 10):
+            picks.append(pick_idle_topic(topics, used, picks[-1] if picks else ""))
+        for start in range(0, len(picks), len(topics)):  # each round uses every topic exactly once
+            self.assertEqual(sorted(picks[start:start + len(topics)]), sorted(topics))
+        self.assertTrue(all(a != b for a, b in zip(picks, picks[1:])))  # no repeat across a round boundary
+        reset = await self.call("PUT", "/api/profiles/tasha", json={"idle_topics": []})
+        self.assertFalse(reset["custom_idle_topics"])
 
     async def test_new_profile_from_gallery_image(self):
         await self.call("PUT", "/api/profiles/Bad-Key", 400, json={"name": "x"})

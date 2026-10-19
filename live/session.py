@@ -37,6 +37,38 @@ IDLE_MOTION = {
     ],
     "scheduling": {"motion_interval": 8, "rest_after_motion": 3},
 }
+# What to talk about when nobody sends danmaku. Topics, never quoted lines (a quoted line gets read out word for
+# word); a profile's own idle_topics replace these.
+IDLE_TOPICS = [
+    "说一件今天身边的小事",
+    "自言自语一句你现在在干嘛",
+    "吐槽一件今天让你有点烦的小事",
+    "说说今天吃了什么",
+    "说说最近单曲循环的一首歌",
+    "说说最近在看的一部剧或者综艺，不剧透",
+    "说说你周末想干嘛",
+    "说说最近刷到的一个好笑的视频",
+    "问问大家这会儿在干嘛",
+    "问问大家今天过得怎么样",
+    "问问大家一般几点睡",
+    "问问大家晚饭吃的什么",
+    "发会儿呆，然后小声说一句你刚才在想什么",
+]
+OUTFIT_TOPIC = "随口提一句可以发弹幕让你换身衣服"
+
+
+def pick_idle_topic(topics: list[str], used: set[str], last: str = "") -> str:
+    """Every topic once, in random order, before any comes round again: the same prompt again gets nearly the
+    same line again. `used` holds the current round and is updated here."""
+    fresh = [t for t in topics if t not in used]
+    if not fresh:  # round finished: start the next one, but not with the topic just used
+        used.clear()
+        fresh = [t for t in topics if t != last] or list(topics)
+    topic = random.choice(fresh)
+    used.add(topic)
+    return topic
+
+
 STATUS_LABELS = {
     "idle": "未开播", "creating": "创建会话中", "connecting": "连接渲染中", "waiting_stage": "等待舞台页入会",
     "live": "直播中", "ending": "下播中", "ended": "已下播", "error": "出错",
@@ -128,7 +160,8 @@ class LiveRoom:
         self.billing = {"billed_seconds": 0, "credits_cost": 0, "rmb": 0.0, "estimate_credits": 0.0}
         self.last_exec_at = time.time()
         self.last_idle_at = 0.0
-        self.last_idle_prompt = ""
+        self.idle_used: set[str] = set()
+        self.last_idle_topic = ""
         self.unknown_frames = 0
         self.frame_file: Path | None = None
         self._kick = asyncio.Event()
@@ -794,17 +827,13 @@ class LiveRoom:
         now = time.time()
         if idle_after and now - self.last_exec_at > idle_after and now - self.last_idle_at > idle_after:
             self.last_idle_at = now
-            prompts = [
-                "【暖场】直播间有点安静，随口说一件今天身边的小事。",
-                "【暖场】没人说话，自言自语一句你现在在干嘛，或者吐槽一句。",
-                "【暖场】随口问一句大家这会儿在干嘛。",
-            ]
+            topics = list(self.avatar_cfg.get("idle_topics") or IDLE_TOPICS)
             wardrobe = self.wardrobe()
-            if wardrobe and len(wardrobe.items) > 1:  # only mention outfits when there are some to change into
-                prompts.append("【暖场】随口提一句可以发弹幕让你换身衣服。")
-            prompt = random.choice([p for p in prompts if p != self.last_idle_prompt] or prompts)  # same prompt twice gets the same line twice
-            self.last_idle_prompt = prompt
-            await self._send(TEXT_MSG, prompt, label="暖场")
+            if not self.avatar_cfg.get("idle_topics") and wardrobe and len(wardrobe.items) > 1:
+                topics.append(OUTFIT_TOPIC)  # only mention outfits when there are some to change into
+            topic = pick_idle_topic(topics, self.idle_used, self.last_idle_topic)
+            self.last_idle_topic = topic
+            await self._send(TEXT_MSG, f"【暖场】{topic}。一两句就好，用你自己的话，别重复前面说过的。", label="暖场")
 
     async def _send(self, signal_type: int, content: str, label: str = "") -> None:
         if self.mode == "dry_run":

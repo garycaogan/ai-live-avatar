@@ -689,6 +689,30 @@
             </div>
           </section>
 
+          <section class="card" aria-labelledby="topicTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="topicTitle">冷场话题</h2>
+                <p class="card-sub" id="topicSub">没人发弹幕时，她从这里挑一个话题开口。每个话题说过一次，要等全部说完一轮才会再出现</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-ghost" id="topicRestore" type="button">恢复内置默认</button>
+              </div>
+            </div>
+            <div class="alert alert-info wd-note" id="topicDefault" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">现在用的是内置默认的一套通用话题。改了保存后，这个角色就用你自己的这套。</div></div>
+            <div class="alert alert-info wd-note" id="topicInUse" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">这个角色的数字人正在运行，保存后下一次冷场开口就会用新话题。</div></div>
+            <div id="topicMsg"></div>
+            <label class="field">话题，一行一个
+              <textarea id="topicText" rows="12" spellcheck="false"></textarea>
+            </label>
+            <p class="hint">写要聊什么，不要写她要说的原句，原句会被一字不差念出来。比如“说说今天加没加班”“问问大家一般几点睡”。每条 60 字以内，最多 100 条。</p>
+            <div class="form-actions">
+              <span class="hint" id="topicCount"></span>
+              <span class="dirty-flag" id="topicDirty" hidden>有未保存的修改</span>
+              <button class="btn btn-primary" id="topicSave" type="button">保存冷场话题</button>
+            </div>
+          </section>
+
           <section class="card" aria-labelledby="kwTitle">
             <div class="card-head">
               <div>
