@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 直播控制台</title>
+<style>
+  :root {
+    --brand-deep: #006659; --brand-700: #087f73; --brand-500: #36a590; --brand-100: #d9f5ef; --brand-50: #e9fffc;
+    --bg: #f2f5f6; --surface: #ffffff; --subtle: #f7f9fa; --border: #e2e8ea; --border-strong: #cbd7d9;
+    --text: #242528; --text-2: #3b3d40; --muted: #757980;
+    --info: #2877c7; --success: #228b65; --warning: #b96913; --danger: #c43b4d;
+    --r-sm: 8px; --r-md: 12px; --shadow: 0 1px 2px rgba(17,55,51,.04), 0 5px 16px rgba(17,55,51,.05);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+    color: var(--text);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); font-size: 14px; line-height: 1.6; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 24px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 20px; margin: 0; font-weight: 720; }
+  header a { color: var(--brand-700); font-weight: 600; text-decoration: none; }
+  header a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--brand-500); outline-offset: 2px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 650; background: var(--subtle); border: 1px solid var(--border); }
+  .chip.live { background: var(--brand-100); color: var(--brand-deep); border-color: var(--brand-100); }
+  .chip.warn { background: #fff4e5; color: var(--warning); border-color: #f6dfbf; }
+  .chip.err { background: #fdecef; color: var(--danger); border-color: #f5ccd3; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 16px 24px 40px; max-width: 1440px; margin: 0 auto; }
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); box-shadow: var(--shadow); padding: 16px 18px; min-width: 0; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 17px; margin: 0 0 12px; font-weight: 700; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-2); font-weight: 600; }
+  input, select { height: 40px; border: 1px solid var(--border-strong); border-radius: var(--r-sm); padding: 0 10px; font: inherit; background: #fff; color: var(--text); min-width: 0; }
+  input.grow { flex: 1; min-width: 180px; }
+  label.grow { flex: 1; min-width: 200px; }
+  button { height: 40px; padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--border-strong); background: #fff; font: inherit; font-weight: 650; cursor: pointer; color: var(--text); }
+  button.primary { background: var(--brand-deep); color: #fff; border-color: var(--brand-deep); }
+  button.danger { color: var(--danger); border-color: #f0b8c1; }
+  button:disabled { cursor: not-allowed; background: var(--subtle); color: var(--muted); border-style: dashed; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 14px; }
+  .stat { background: var(--subtle); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 8px 12px; }
+  .stat span { display: block; font-size: 12px; color: var(--muted); }
+  .stat b { font-size: 17px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .samples button { height: 36px; font-size: 13px; font-weight: 600; background: var(--subtle); }
+  .note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  .notice { margin-top: 10px; padding: 8px 12px; border-radius: var(--r-sm); background: #fdecef; color: var(--danger); display: none; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 650; white-space: nowrap; }
+  .scroll { max-height: 320px; overflow: auto; }
+  .k { display: inline-block; padding: 0 8px; border-radius: 999px; background: var(--brand-50); color: var(--brand-deep); font-weight: 650; white-space: nowrap; }
+  .s-failed, .s-expired { color: var(--danger); } .s-preparing { color: var(--warning); } .s-done { color: var(--success); } .s-executing { color: var(--info); }
+  #log { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #0b1f2a; color: #d6ece8; border-radius: var(--r-sm); padding: 10px; height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+  #log .warn { color: #ffcf8a; } #log .error { color: #ff9aa8; } #log .debug { color: #8fb3c4; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; padding: 12px; } header { padding: 12px; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 直播间原型</h1>
+  <span id="status" class="chip">未开播</span>
+  <span id="keyChip" class="chip"></span>
+  <a href="/stage" target="_blank" rel="noopener">打开舞台页 ↗</a>
+</header>
+<main>
+  <section>
+    <h2>开播</h2>
+    <div class="row">
+      <label>模型
+        <select id="model">
+          <option value="vidu-s2">vidu-s2（能换装换景，灰度中）</option>
+          <option value="vidu-s1">vidu-s1（稳定，不能换装）</option>
+        </select>
+      </label>
+      <label>形象<select id="profile"></select></label>
+      <img id="thumb" alt="当前形象预览" width="40" height="64" style="border-radius:8px;object-fit:cover;border:1px solid var(--border)">
+      <button id="startBtn" class="primary" type="button">开播</button>
+      <button id="dryBtn" type="button">空跑演示</button>
+      <button id="stopBtn" class="danger" type="button">下播</button>
+    </div>
+    <p class="note">开播后先打开舞台页（点一下开启声音），舞台页入会后才算正式开播。计费从渲染侧就绪开始，到预算或时长上限会自动下播。</p>
+    <div id="notice" class="notice" role="alert"></div>
+    <div class="stats">
+      <div class="stat"><span>会话 ID</span><b id="liveId">-</b></div>
+      <div class="stat"><span>已播</span><b id="elapsed">0:00</b></div>
+      <div class="stat"><span>计费秒数</span><b id="billed">0</b></div>
+      <div class="stat"><span>已用积分</span><b id="credits">0</b></div>
+      <div class="stat"><span>折合人民币</span><b id="rmb">¥0</b></div>
+      <div class="stat"><span>本场上限</span><b id="budget">-</b></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>模拟弹幕</h2>
+    <div class="row">
+      <label>昵称<input id="user" value="测试观众" maxlength="20"></label>
+      <label class="grow">弹幕内容<input id="text" class="grow" maxlength="60" placeholder="例如：换件衣服"></label>
+      <label>礼物值<input id="gift" type="number" min="0" step="1" value="0" style="width:90px"></label>
+      <button id="sendBtn" class="primary" type="button">发送</button>
+    </div>
+    <div class="samples" id="samples"></div>
+    <div class="row" style="margin-top:14px">
+      <label>执行间隔（秒）<input id="interval" type="number" min="5" max="120" style="width:100px"></label>
+      <label>挑选规则
+        <select id="policy">
+          <option value="gift_first_random">礼物优先，其余随机</option>
+          <option value="gift_first_fifo">礼物优先，其余按先后</option>
+          <option value="random_recent">纯随机（最近 10 条）</option>
+          <option value="fifo">纯按先后</option>
+        </select>
+      </label>
+      <button id="nextBtn" type="button">立即执行下一条</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>排队中 <span id="qCount" class="chip">0</span></h2>
+    <div class="scroll"><table><thead><tr><th>#</th><th>观众</th><th>弹幕</th><th>类型</th><th>状态</th></tr></thead><tbody id="queue"></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>已拦截</h2>
+    <div class="scroll"><table><thead><tr><th>观众</th><th>弹幕</th><th>原因</th></tr></thead><tbody id="filtered"></tbody></table></div>
+  </section>
+
+  <section class="wide">
+    <h2>执行记录</h2>
+    <div class="scroll"><table><thead><tr><th>#</th><th>时间</th><th>观众</th><th>弹幕</th><th>类型</th><th>道具/动作</th><th>状态</th><th>说明</th></tr></thead><tbody id="history"></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>手动控制</h2>
+    <div class="row">
+      <label>信令
+        <select id="manualKind">
+          <option value="text_msg">对话（会回复并做动作）</option>
+          <option value="text_dialog">只对话</option>
+          <option value="text_action">只做动作</option>
+          <option value="text_tts">直接念出来（仅豆包音色）</option>
+          <option value="interrupt">打断当前说话</option>
+          <option value="reset">恢复原始造型</option>
+        </select>
+      </label>
+      <label class="grow">内容<input id="manualText" class="grow" maxlength="200"></label>
+      <button id="manualBtn" type="button">发送</button>
+    </div>
+    <p class="note">当前画面叠加：<span id="visual">无</span></p>
+  </section>
+
+  <section>
+    <h2>日志</h2>
+    <div id="log" aria-live="off"></div>
+  </section>
+</main>
+<script>
+const $ = (id) => document.getElementById(id);
+const KIND = { chat: "聊天", action: "动作", garment: "换装", outfit: "整套换装", object: "道具", background: "换背景", reset: "复原", gift_thanks: "礼物" };
+const STATUS = { ready: "待执行", preparing: "准备道具", executing: "执行中", done: "已执行", failed: "失败", expired: "已过期" };
+const SAMPLES = ["你好呀", "你是真人吗", "换件衣服", "戴上一个棒球帽", "拿出一只烤鸭", "背景换成海边日落", "跳个舞", "比个心", "把头发染成雾霾蓝", "换回来", "站起来看下身材", "加我微信"];
+let lastState = null;
+
+async function api(path, body) {
+  const resp = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+  return data;
+}
+function notice(msg) { const n = $("notice"); n.textContent = msg || ""; n.style.display = msg ? "block" : "none"; }
+function fmt(sec) { sec = Math.max(0, sec | 0); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; }
+function cell(tr, text, cls) { const td = document.createElement("td"); td.textContent = text ?? ""; if (cls) td.className = cls; tr.append(td); return td; }
+function kindCell(tr, kind) { const td = document.createElement("td"); const s = document.createElement("span"); s.className = "k"; s.textContent = KIND[kind] || kind; td.append(s); tr.append(td); }
+
+SAMPLES.forEach(t => {
+  const b = document.createElement("button"); b.type = "button"; b.textContent = t;
+  b.onclick = () => send(t); $("samples").append(b);
+});
+
+async function send(text) {
+  const content = (text ?? $("text").value).trim();
+  const gift = Number($("gift").value || 0);
+  if (!content && !gift) return;
+  if (text == null) $("text").value = "";  // clear before awaiting so fast typing is never wiped
+  try {
+    const r = await api("/api/danmaku", { user: $("user").value, text: content, gift, source: "console" });
+    if (!r.accepted) notice(`已拦截：${r.category}，${r.reason}`); else notice("");
+  } catch (e) { notice(e.message); if (text == null && !$("text").value) $("text").value = content; }
+}
+$("sendBtn").onclick = () => send();
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter") send(); });
+$("startBtn").onclick = async () => { notice(""); try { await api("/api/session/start", { model: $("model").value, profile: $("profile").value }); } catch (e) { notice(e.message); } };
+$("dryBtn").onclick = async () => { notice(""); try { await api("/api/session/start", { model: $("model").value, dry_run: true, profile: $("profile").value }); } catch (e) { notice(e.message); } };
+$("profile").onchange = () => { $("thumb").src = `/avatar.jpg?profile=${encodeURIComponent($("profile").value)}`; };
+$("stopBtn").onclick = async () => { if (confirm("确定下播？")) { try { await api("/api/session/stop"); } catch (e) { notice(e.message); } } };
+$("nextBtn").onclick = () => api("/api/next").catch(e => notice(e.message));
+$("interval").onchange = () => api("/api/settings", { interval_seconds: Number($("interval").value) }).catch(e => notice(e.message));
+$("policy").onchange = () => api("/api/settings", { policy: $("policy").value }).catch(e => notice(e.message));
+$("manualBtn").onclick = async () => {
+  try { await api("/api/manual", { kind: $("manualKind").value, content: $("manualText").value }); $("manualText").value = ""; notice(""); }
+  catch (e) { notice(e.message); }
+};
+
+function render(s) {
+  lastState = s;
+  const st = $("status");
+  st.textContent = s.status_label + (s.mode === "dry_run" ? "（空跑）" : "") + (s.end_reason && ["ended", "error"].includes(s.status) ? `：${s.end_reason}` : "");
+  st.className = "chip " + ({ live: "live", waiting_stage: "warn", creating: "warn", connecting: "warn", error: "err" }[s.status] || "");
+  $("keyChip").textContent = `Vidu Key ${s.has_api_key ? "已配置" : "未配置"} · 生图${s.generator ? "开" : "关"}`;
+  const active = ["creating", "connecting", "waiting_stage", "live", "ending"].includes(s.status);
+  $("startBtn").disabled = active || !s.has_api_key; $("dryBtn").disabled = active; $("stopBtn").disabled = !active;
+  const sel = $("profile");
+  const keys = (s.profiles || []).map(p => p.key).join(",");
+  if (sel.dataset.keys !== keys) {
+    sel.innerHTML = "";
+    (s.profiles || []).forEach(p => { const o = document.createElement("option"); o.value = p.key; o.textContent = p.name + (p.note ? `（${p.note}）` : ""); sel.append(o); });
+    sel.dataset.keys = keys; sel.value = s.profile; sel.onchange();
+  }
+  if (active && sel.value !== s.profile) { sel.value = s.profile; sel.onchange(); }
+  sel.disabled = active;
+  $("liveId").textContent = s.live_id || "-";
+  $("elapsed").textContent = fmt(s.elapsed);
+  $("billed").textContent = s.billing.billed_seconds;
+  const credits = Math.max(s.billing.credits_cost, 0);
+  $("credits").textContent = credits ? credits : (s.billing.estimate_credits ? `≈${s.billing.estimate_credits}` : 0);
+  const rmb = credits ? s.billing.rmb : (s.billing.estimate_credits || 0) * s.credit_price_rmb;
+  $("rmb").textContent = `${credits ? "" : "≈"}¥${rmb.toFixed(2)}`;
+  $("budget").textContent = `${s.max_session_minutes} 分钟 / ${s.budget_credits} 积分`;
+  if (document.activeElement !== $("interval")) $("interval").value = s.interval_seconds;
+  if (document.activeElement !== $("policy")) $("policy").value = s.policy;
+  $("visual").textContent = Object.entries(s.visual || {}).map(([k, v]) => `${KIND[k]}：${v}`).join("，") || "无";
+
+  $("qCount").textContent = s.queue.length;
+  const q = $("queue"); q.innerHTML = "";
+  s.queue.forEach(c => { const tr = document.createElement("tr"); cell(tr, c.id); cell(tr, c.user + (c.gift > 0 ? ` 🎁${c.gift}` : "")); cell(tr, c.text);
+    kindCell(tr, c.kind); cell(tr, STATUS[c.status] || c.status, "s-" + c.status); q.append(tr); });
+  const f = $("filtered"); f.innerHTML = "";
+  s.filtered.forEach(x => { const tr = document.createElement("tr"); cell(tr, x.user); cell(tr, x.text); cell(tr, `${x.category}：${x.reason}`, "s-failed"); f.append(tr); });
+  const h = $("history"); h.innerHTML = "";
+  s.history.forEach(c => { const tr = document.createElement("tr"); cell(tr, c.id);
+    cell(tr, c.executed_at ? new Date(c.executed_at * 1000).toLocaleTimeString() : "-"); cell(tr, c.user); cell(tr, c.text); kindCell(tr, c.kind);
+    cell(tr, c.item || c.asset || ""); cell(tr, STATUS[c.status] || c.status, "s-" + c.status); cell(tr, c.note); h.append(tr); });
+}
+
+function addLog(entry) {
+  const div = document.createElement("div");
+  div.className = entry.level;
+  const time = new Date(entry.t * 1000).toLocaleTimeString();
+  div.textContent = `${time} ${entry.message}${entry.data ? " " + JSON.stringify(entry.data) : ""}`;
+  const log = $("log"); log.append(div);
+  while (log.childNodes.length > 300) log.firstChild.remove();
+  log.scrollTop = log.scrollHeight;
+}
+
+setInterval(() => { if (lastState && ["waiting_stage", "live"].includes(lastState.status)) { lastState.elapsed += 1; $("elapsed").textContent = fmt(lastState.elapsed); } }, 1000);
+
+function connect() {
+  const es = new EventSource("/api/events");
+  es.addEventListener("state", (e) => render(JSON.parse(e.data)));
+  es.addEventListener("log", (e) => addLog(JSON.parse(e.data)));
+  es.onerror = () => { es.close(); setTimeout(connect, 2000); };
+}
+connect();
+</script>
+</body>
+</html>

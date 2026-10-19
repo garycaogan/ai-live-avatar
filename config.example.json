@@ -1,0 +1,46 @@
+{
+  "vidu": {
+    "env": "cn",
+    "api_key_file": "~/.deepsea/vidu/api.key",
+    "model": "vidu-s2",
+    "call_mode": "video",
+    "rtc_provider": "artc",
+    "max_tokens": 80,
+    "enable_recording": true,
+    "credit_price_rmb": 0.03125,
+    "credits_per_second": 1.5
+  },
+  "avatar_profile": "xiaoshen",
+  "avatars": {
+    "xiaoshen": {
+      "name": "小深",
+      "image": "assets/avatars/xiaoshen.jpg",
+      "voice": "",
+      "persona_file": "persona.md",
+      "greeting_instruction": "用一句话热情地跟直播间观众打招呼，告诉大家可以发弹幕指挥你换衣服、换背景、拿东西"
+    }
+  },
+  "schedule": {
+    "interval_seconds": 20,
+    "policy": "random_recent",
+    "max_age_seconds": 180,
+    "max_queue": 200,
+    "idle_prompt_after_seconds": 45
+  },
+  "safety": {
+    "max_session_minutes": 30,
+    "budget_credits": 3000
+  },
+  "generator": {
+    "enabled": true,
+    "api_key_file": "~/.deepsea/evolink/api.key",
+    "model": "gpt-image-2.5-sunburst",
+    "resolution": "1K",
+    "quality": "medium",
+    "timeout_seconds": 180
+  },
+  "server": {
+    "host": "127.0.0.1",
+    "port": 28900
+  }
+}

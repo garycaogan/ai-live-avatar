@@ -1,0 +1,15 @@
+__pycache__/
+.venv/
+.DS_Store
+logs/
+.state/
+.mock-run/
+config.json
+# characters, voices, gallery and recordings are the operator's own assets
+assets/*
+!assets/stage_panel.example.json
+personas/
+persona_*.md
+recordings/
+research/
+static/vendor/*.js

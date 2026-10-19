@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>试验页</title>
+<script>
+// Runs before the RTC SDK loads. Remember remote tracks (for recording) and, in Editing mode,
+// hand the SDK a looping driver video whenever it asks for a camera.
+const P = new URLSearchParams(location.search);
+window.__remote = { audio: null, video: null };
+(function () {
+  const Orig = window.RTCPeerConnection;
+  if (!Orig) return;
+  function Patched(...args) {
+    const pc = new Orig(...args);
+    pc.addEventListener("track", (e) => { window.__remote[e.track.kind] = e.track; });
+    return pc;
+  }
+  Patched.prototype = Orig.prototype;
+  Object.setPrototypeOf(Patched, Orig);
+  window.RTCPeerConnection = Patched;
+})();
+if (P.get("publish") === "1") {
+  const v = document.createElement("video");
+  v.src = P.get("driver"); v.loop = true; v.muted = true; v.playsInline = true; v.autoplay = true; v.id = "driver";
+  document.documentElement.appendChild(v);
+  window.__driver = v;
+  const md = navigator.mediaDevices;
+  const origGum = md.getUserMedia.bind(md);
+  md.getUserMedia = async (c) => {
+    if (c && c.video) { await v.play().catch(() => {}); return new MediaStream(v.captureStream().getVideoTracks()); }
+    return origGum(c);
+  };
+  const origEnum = md.enumerateDevices.bind(md);
+  md.enumerateDevices = async () => {
+    const list = await origEnum().catch(() => []);
+    if (!list.some(d => d.kind === "videoinput")) list.push({ deviceId: "driver", kind: "videoinput", label: "driver video", groupId: "driver", toJSON() { return this; } });
+    return list;
+  };
+}
+</script>
+<!-- AliRTC web SDK 7.1.9, served locally (copied from g.alicdn.com) so a blocked or slow CDN cannot break the stage -->
+<script src="/static/vendor/aliyun-rtc-sdk-7.1.9.js"></script>
+<style>
+  body { margin: 0; background: #071e2c; color: #fff; font: 14px -apple-system, "PingFang SC", sans-serif; display: flex; gap: 12px; padding: 12px; }
+  video { width: 360px; height: 640px; object-fit: cover; background: #000; border-radius: 12px; }
+  #driver { width: 180px; height: 320px; position: fixed; right: 12px; bottom: 12px; }
+  pre { white-space: pre-wrap; font-size: 12px; max-width: 420px; }
+</style>
+</head>
+<body>
+<video id="remote" autoplay playsinline muted></video>
+<pre id="log"></pre>
+<script>
+const logEl = document.getElementById("log");
+const log = (m) => { logEl.textContent += `${new Date().toLocaleTimeString()} ${m}\n`; };
+const post = (p, b) => fetch(p, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b || {}) });
+let engine = null, push = null;
+
+async function call(name, ...args) {
+  if (typeof engine[name] !== "function") return;
+  try { return await engine[name](...args); } catch (e) { log(`optional ${name}: ${e.message || e}`); }
+}
+
+async function join(t) {
+  engine = window.AliRtcEngine.getInstance();
+  engine.on("videoSubscribeStateChanged", (uid, _o, n) => {
+    log(`video ${uid} -> ${n}`);
+    if (n === 3 && (!t.render_uid || uid === t.render_uid)) engine.setRemoteViewConfig(document.getElementById("remote"), uid, 1);
+  });
+  engine.on("remoteUserOnLineNotify", (uid) => log(`online ${uid}`));
+  await call("setChannelProfile", "communication");
+  await call("setDefaultPublishLocalAudioStream", false);
+  await call("setDefaultPublishLocalVideoStream", !!t.publish);
+  await call("setDefaultSubscribeAllRemoteAudioStreams", true);
+  await call("setDefaultSubscribeAllRemoteVideoStreams", true);
+  await engine.joinChannel(t.rtc.token, t.rtc.user_id);
+  log("joined");
+  if (t.publish) {
+    await call("startPreview");
+    await call("publishLocalVideoStream", true);
+    log("publishing driver video");
+  }
+  post("/api/trial/joined");
+}
+
+function startPush() {
+  const v = window.__remote.video;
+  if (push || !v || v.readyState !== "live") return;
+  const a = window.__remote.audio && window.__remote.audio.readyState === "live" ? window.__remote.audio : null;
+  const mime = ["video/webm;codecs=h264,opus", "video/webm;codecs=vp8,opus", "video/webm"].find(m => MediaRecorder.isTypeSupported(m));
+  const ws = new WebSocket(`${location.origin.replace("http", "ws")}/api/broadcast/ingest`);
+  const rec = new MediaRecorder(new MediaStream(a ? [v, a] : [v]), { mimeType: mime, videoBitsPerSecond: 4_000_000 });
+  push = { ws, rec };
+  ws.onopen = () => { ws.send(JSON.stringify({ mime, hasAudio: !!a })); rec.ondataavailable = (e) => e.data.size && ws.readyState === 1 && ws.send(e.data); rec.start(500); log(`recording audio=${!!a}`); };
+  ws.onclose = () => { try { rec.stop(); } catch {} push = null; };
+}
+
+(async () => {
+  for (;;) {
+    const t = await fetch("/api/trial/state").then(r => r.json());
+    if (t.state === "live" && t.rtc && !engine) { log(`trial ${t.mode} live ${t.live_id}`); try { await join(t); } catch (e) { log(`join failed: ${e.message || e}`); } }
+    if (engine) startPush();
+    if (["stopped", "error"].includes(t.state) && engine) { log(`trial ${t.state}`); try { await engine.leaveChannel(); } catch {} break; }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+})();
+</script>
+</body>
+</html>

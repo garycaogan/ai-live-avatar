@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>直播舞台</title>
+<script>
+// Installed before the RTC SDK loads: remember remote tracks so broadcast mode can record
+// the avatar's raw audio and video (the SDK plays audio internally and never exposes it).
+window.__remote = { audio: null, video: null };
+(function () {
+  const Orig = window.RTCPeerConnection;
+  if (!Orig) return;
+  function Patched(...args) {
+    const pc = new Orig(...args);
+    pc.addEventListener("track", (e) => { window.__remote[e.track.kind] = e.track; window.dispatchEvent(new CustomEvent("remotetrack", { detail: e.track })); });
+    pc.addEventListener("connectionstatechange", () => window.dispatchEvent(new CustomEvent("pcstate", { detail: pc.connectionState })));
+    return pc;
+  }
+  Patched.prototype = Orig.prototype;
+  Object.setPrototypeOf(Patched, Orig);
+  window.RTCPeerConnection = Patched;
+})();
+</script>
+<!-- AliRTC web SDK 7.1.9, served locally (copied from g.alicdn.com) so a blocked or slow CDN cannot break the stage -->
+<script src="/static/vendor/aliyun-rtc-sdk-7.1.9.js"></script>
+<style>
+  :root {
+    --brand: #36a590; --brand-deep: #006659; --brand-50: #e9fffc;
+    --ink: #071e2c; --card: rgba(6, 25, 36, .72); --text: #ffffff; --muted: rgba(255,255,255,.72);
+    --warn: #b96913; --danger: #c43b4d;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  /* Designed at 1080x1920; scaled to fit any window. In OBS use a 1080x1920 browser source. */
+  #frame { position: absolute; left: 50%; top: 50%; width: 1080px; height: 1920px; transform-origin: center center;
+           background: var(--ink); overflow: hidden; color: var(--text); }
+  #placeholder { position: absolute; inset: 0; background: center/cover no-repeat url("/avatar.jpg"); filter: blur(18px) brightness(.55); transform: scale(1.08); }
+  #placeholderText { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-size: 46px; font-weight: 700; color: var(--muted); }
+  #videoBox { position: absolute; inset: 0; }
+  #videoBox video { width: 100%; height: 100%; object-fit: cover; background: transparent; }
+  .badge { position: absolute; top: 56px; left: 48px; display: flex; flex-direction: column; gap: 10px; }
+  .pill { display: inline-flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 16px; background: var(--card);
+          font-size: 30px; font-weight: 700; width: fit-content; }
+  .pill .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--brand); }
+  .pill.ai { background: rgba(0, 102, 89, .9); }
+  .pill.sub { font-size: 26px; font-weight: 600; color: var(--muted); }
+  #countdown { position: absolute; top: 56px; right: 48px; width: 150px; height: 150px; border-radius: 50%; background: var(--card);
+               display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #countdown b { font-size: 56px; line-height: 1; font-variant-numeric: tabular-nums; }
+  #countdown span { font-size: 22px; color: var(--muted); margin-top: 6px; }
+  #current { position: absolute; left: 48px; right: 48px; top: 1060px; padding: 22px 28px; border-radius: 16px; background: rgba(0, 102, 89, .88);
+             font-size: 34px; font-weight: 700; display: none; }
+  #current small { display: block; font-size: 24px; font-weight: 600; color: var(--brand-50); margin-bottom: 6px; }
+  #subtitle { position: absolute; left: 60px; right: 60px; top: 1210px; text-align: center; font-size: 42px; font-weight: 700; line-height: 1.45;
+              text-shadow: 0 2px 6px rgba(0,0,0,.85), 0 0 2px rgba(0,0,0,.9); }
+  #queueCard { position: absolute; left: 48px; right: 48px; bottom: 210px; padding: 22px 28px; border-radius: 16px; background: var(--card); }
+  #queueCard h3 { margin: 0 0 10px; font-size: 26px; font-weight: 700; color: var(--brand-50); }
+  #queueList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  #queueList li { font-size: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #queueList li .who { color: var(--brand-50); font-weight: 700; margin-right: 10px; }
+  #queueList li .gift { color: #ffd479; margin-left: 8px; font-size: 24px; }
+  #queueList li.preparing { color: var(--muted); }
+  #rules { position: absolute; left: 48px; right: 48px; bottom: 120px; font-size: 26px; color: var(--muted); text-align: center; }
+  #swapCard { position: absolute; left: 48px; right: 48px; top: 820px; height: 250px; border-radius: 24px; background: rgba(6,25,36,.86);
+              display: none; flex-direction: column; align-items: center; justify-content: center; gap: 18px; z-index: 5; }
+  #swapCard b { font-size: 54px; } #swapCard span { font-size: 32px; color: var(--brand-50); }
+  /* Test notes like the Douyin reference room: what works, what does not yet, how to write danmaku.
+     Text comes from /files/stage_panel.json, shared with the built-in broadcaster (broadcast.py). */
+  .panel { position: absolute; top: 250px; width: 312px; padding: 18px 20px 14px; border-radius: 16px; background: rgba(6, 25, 36, .66); }
+  #infoPanel { left: 48px; width: 340px; }
+  #tipsPanel { right: 48px; top: 236px; }
+  .panel .title { display: block; margin: 0 0 12px; padding: 8px 14px; border-radius: 12px; background: rgba(0, 102, 89, .92);
+                  font-size: 22px; font-weight: 800; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .panel h4 { margin: 0 0 8px; font-size: 22px; font-weight: 700; color: var(--brand-50); }
+  .panel ul { list-style: none; margin: 0 0 10px; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .panel ul.rows { grid-template-columns: 1fr; }
+  .panel li { display: flex; align-items: center; gap: 8px; font-size: 22px; line-height: 1.35; white-space: nowrap; overflow: hidden; }
+  .panel li::before { content: ""; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--brand-deep) center/14px no-repeat
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2.5 7.2l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+  .panel li.no { color: var(--muted); }
+  .panel li.no::before { background-color: rgba(255, 255, 255, .2);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M3.5 3.5l7 7M10.5 3.5l-7 7' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E"); }
+  #unlock { position: absolute; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 10; }
+  #unlock button { font: inherit; font-size: 44px; font-weight: 700; padding: 28px 56px; border-radius: 16px; border: 0; background: var(--brand-deep); color: #fff; cursor: pointer; }
+  #rtcError { position: absolute; left: 48px; right: 48px; top: 240px; padding: 18px 24px; border-radius: 16px; background: rgba(196, 59, 77, .92);
+              font-size: 26px; display: none; z-index: 11; }
+  #rtcError button { font: inherit; font-size: 26px; font-weight: 700; margin-left: 8px; padding: 6px 18px; border-radius: 12px; border: 0; background: #fff; color: #c43b4d; cursor: pointer; }
+  /* A landscape stream (landscape base photo) sits in a box near the top like the Douyin room, cropped to
+     1.2:1; the text cards move below it. Only for the composed layers, not the bare OBS avatar layer. */
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #videoBox { top: 268px; bottom: auto; height: 900px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #videoBox video { object-fit: cover; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #current { top: 1190px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #subtitle { top: 1330px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #swapCard { top: 600px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) .panel { top: 292px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #infoPanel { left: 24px; }
+  html[data-orient="landscape"]:not([data-layer="avatar"]) #tipsPanel { right: 24px; }
+  /* OBS layers. avatar: only the picture, filling the source (no text). overlay: only the text cards on a
+     transparent background, never joins RTC. */
+  html[data-layer="avatar"] #frame { left: 0; top: 0; width: 100%; height: 100%; transform: none !important; background: #000; }
+  html[data-layer="avatar"] #videoBox video { object-fit: contain; }
+  html[data-layer="avatar"] .badge, html[data-layer="avatar"] #countdown, html[data-layer="avatar"] #current,
+  html[data-layer="avatar"] #subtitle, html[data-layer="avatar"] #queueCard, html[data-layer="avatar"] #rules,
+  html[data-layer="avatar"] #swapCard, html[data-layer="avatar"] .panel { display: none !important; }
+  html[data-layer="avatar"] #placeholderText { font-size: 4vmin; }
+  html[data-layer="avatar"] #rtcError { top: 4vmin; left: 4vmin; right: 4vmin; font-size: 2.6vmin; }
+  html[data-layer="overlay"], html[data-layer="overlay"] body, html[data-layer="overlay"] #frame { background: transparent; }
+  html[data-layer="overlay"] #placeholder, html[data-layer="overlay"] #placeholderText, html[data-layer="overlay"] #videoBox,
+  html[data-layer="overlay"] #rtcError, html[data-layer="overlay"] #unlock { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</head>
+<body>
+<div id="frame">
+  <div id="placeholder"></div>
+  <div id="placeholderText">准备开播…</div>
+  <div id="videoBox"></div>
+  <div class="badge">
+    <div class="pill ai"><span class="dot" aria-hidden="true"></span>AI 实时生成画面</div>
+    <div class="pill sub" id="hostName">虚拟主播</div>
+  </div>
+  <aside id="infoPanel" class="panel" aria-label="测试说明" hidden>
+    <span class="title" id="panelTitle"></span>
+    <h4 id="canTitle"></h4><ul id="canList"></ul>
+    <h4 id="cannotTitle"></h4><ul id="cannotList"></ul>
+  </aside>
+  <aside id="tipsPanel" class="panel" aria-label="弹幕玩法" hidden>
+    <h4 id="tipsTitle"></h4><ul class="rows" id="tipsList"></ul>
+  </aside>
+  <div id="countdown" aria-live="polite"><b id="countNum">--</b><span>下一条指令</span></div>
+  <div id="rtcError" role="alert"></div>
+  <div id="current"><small>正在执行</small><span id="currentText"></span></div>
+  <div id="subtitle"></div>
+  <div id="queueCard">
+    <h3 id="queueTitle">弹幕排队中</h3>
+    <ul id="queueList"></ul>
+  </div>
+  <div id="rules"></div>
+  <div id="swapCard"><b id="swapTitle">正在换装…</b><span id="swapText"></span></div>
+  <div id="unlock"><button id="unlockBtn" type="button">点击开启画面和声音</button></div>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+// embed=1: the workbench preview. obs=1&role=obs&layer=avatar|all: OBS browser sources. overlay=1: transparent
+// text layer for OBS (never joins RTC). broadcast=1: the built-in push page.
+const BROADCAST = params.get("broadcast") === "1";
+const LAYER = params.get("overlay") === "1" ? "overlay" : (["avatar", "all"].includes(params.get("layer")) ? params.get("layer") : "all");
+const ROLE = params.get("role") || (BROADCAST ? "broadcast" : "preview");
+const OBS = params.get("obs") === "1" || BROADCAST || LAYER === "overlay";  // no click-to-unmute screen
+const NO_RTC = LAYER === "overlay";
+document.documentElement.dataset.layer = LAYER;
+const $ = (id) => document.getElementById(id);
+const KIND = { chat: "聊天", action: "动作", garment: "换装", outfit: "换装", object: "道具", background: "换背景", reset: "复原", gift_thanks: "礼物" };
+let state = {};
+let engine = null;
+let joining = false;
+let joinedLive = null;
+let nextAt = null;
+let retry = { live: null, count: 0, at: 0 };
+let switching = false;
+const CLIENT_ID = (crypto.randomUUID && crypto.randomUUID()) || String(Math.random()).slice(2);
+const post = (path, body) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+addEventListener("pagehide", () => navigator.sendBeacon("/api/stage/release", new Blob([JSON.stringify({ client_id: CLIENT_ID, why: "舞台页关闭或刷新" })], { type: "application/json" })));
+setInterval(() => { if (engine) post("/api/stage/heartbeat", { client_id: CLIENT_ID }).catch(() => {}); }, 5000);
+
+function fit() {
+  if (LAYER === "avatar") return;  // the picture fills the browser source; text layers keep the 1080x1920 design
+  const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+  $("frame").style.transform = `translate(-50%, -50%) scale(${s})`;
+}
+addEventListener("resize", fit); fit();
+
+if (OBS) $("unlock").remove();
+$("unlockBtn")?.addEventListener("click", () => { $("unlock").remove(); document.querySelectorAll("video").forEach(v => v.play().catch(() => {})); });
+
+async function report(event, detail = "") {
+  try { await fetch("/api/stage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ event, detail: String(detail) }) }); } catch {}
+}
+
+function showError(msg, offerRetry = false) {
+  const el = $("rtcError"); el.textContent = msg; el.style.display = msg ? "block" : "none";
+  if (offerRetry) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = "手动重试";
+    b.onclick = () => { retry = { live: state.live_id, count: 0, at: 0 }; showError(""); render(state); };
+    el.append(" ", b);
+  }
+}
+
+function render(s) {
+  state = s;
+  // Without its own video (the OBS text layer, or before the picture arrives) lay out by the base photo.
+  if (NO_RTC || !$("videoBox").querySelector("video")) document.documentElement.dataset.orient = s.avatar_orient || "portrait";
+  $("hostName").textContent = `虚拟主播 ${s.avatar_name || ""}`;
+  if (state._profile !== s.profile) { $("placeholder").style.backgroundImage = `url("/avatar.jpg?profile=${encodeURIComponent(s.profile)}")`; }
+  s._profile = s.profile;
+  const live = ["waiting_stage", "live"].includes(s.status);
+  $("placeholderText").textContent = live ? (engine ? "画面连接中…" : "准备入会…") : (s.status === "ended" ? "本场已结束" : s.mode === "dry_run" ? "空跑演示中" : "准备开播…");
+  if (s.mode === "dry_run" && live) $("placeholderText").textContent = "空跑演示（无数字人画面）";
+  nextAt = s.next_in != null ? Date.now() + s.next_in * 1000 : null;
+  const cur = s.current && ["executing", "done"].includes(s.current.status) && Date.now() / 1000 - (s.current.executed_at || 0) < 15 ? s.current : null;
+  $("current").style.display = cur ? "block" : "none";
+  if (cur) $("currentText").textContent = `@${cur.user}：${cur.text || KIND[cur.kind]}`;
+  const q = s.queue || [];
+  $("queueTitle").textContent = q.length ? `弹幕排队中 · ${q.length} 条` : "发条弹幕跟我聊聊，或者让我做个动作";
+  $("queueList").innerHTML = "";
+  q.slice().sort((a, b) => (b.gift - a.gift) || (a.created_at - b.created_at)).slice(0, 3).forEach(c => {
+    const li = document.createElement("li");
+    if (c.status === "preparing") li.className = "preparing";
+    const who = document.createElement("span"); who.className = "who"; who.textContent = c.user;
+    li.append(who, document.createTextNode(c.text || KIND[c.kind]));
+    if (c.status === "preparing") li.append(document.createTextNode("（道具准备中）"));
+    $("queueList").append(li);
+  });
+  $("rules").textContent = `每 ${s.interval_seconds} 秒执行一条弹幕｜低俗、引流内容不执行`;
+  $("subtitle").textContent = s.subtitle || "";
+  if (panel) renderPanel();
+  if (BROADCAST) maybeBroadcast();
+  // An outfit change starts a new Vidu session: leave the old channel, then join the new one below.
+  if (engine && !switching && joinedLive && s.live_id && joinedLive !== s.live_id && s.rtc_ready) {
+    switching = true;
+    report("rtc", `switching from ${joinedLive} to ${s.live_id}`);
+    leaveRtc().finally(() => { switching = false; render(state); });
+    return;
+  }
+  $("swapCard").style.display = s.swapping ? "flex" : "none";
+  if (s.swapping) { $("swapTitle").textContent = `${s.avatar_name} 正在换装…`; $("swapText").textContent = `换上${s.swapping.to}，@${s.swapping.user} 点的`; }
+  // Join once per live session. A failure retries with backoff, never on every state push:
+  // reporting the error triggers a state broadcast, so an immediate retry would loop.
+  if (!NO_RTC && live && s.mode === "vidu" && s.rtc_ready && !engine && !joining && !switching && joinedLive !== s.live_id && Date.now() >= retry.at) {
+    if (retry.live !== s.live_id) retry = { live: s.live_id, count: 0, at: 0 };
+    if (retry.count < 3) claimAndJoin(s.live_id);
+  }
+  if (!live && engine && !switching) { switching = true; leaveRtc().finally(() => { switching = false; }); }
+}
+
+setInterval(() => {
+  $("countNum").textContent = nextAt ? Math.max(0, Math.round((nextAt - Date.now()) / 1000)) : "--";
+}, 250);
+
+// Test notes: re-read every minute so edits to assets/stage_panel.json show up without reloading OBS.
+// assets/stage_panel.example.json is the shipped fallback.
+let panel = null, panelKey = "";
+function fillList(id, items) {
+  $(id).replaceChildren(...items.filter(([text]) => text).map(([text, no]) => {
+    const li = document.createElement("li"); li.textContent = text; if (no) li.className = "no"; return li;
+  }));
+}
+function renderPanel() {
+  const key = JSON.stringify([panel, state.profile]);
+  if (key === panelKey) return;
+  panelKey = key;
+  $("infoPanel").hidden = $("tipsPanel").hidden = !panel;
+  if (!panel) return;
+  const hints = panel.outfit_hint || {};
+  const hint = hints[state.profile] || hints.default || "";
+  $("panelTitle").textContent = panel.title || "";
+  $("canTitle").textContent = panel.can_title || "";
+  $("cannotTitle").textContent = panel.cannot_title || "";
+  $("tipsTitle").textContent = panel.tips_title || "";
+  fillList("canList", (panel.can || []).map(t => [t, false]));
+  fillList("cannotList", (panel.cannot || []).map(t => [t, true]));
+  fillList("tipsList", [...(panel.good || []).map(t => [t.replace("{outfit_hint}", hint), false]), ...(panel.bad || []).map(t => [t, true])]);
+}
+async function loadPanel() {
+  try {
+    let r = await fetch("/files/stage_panel.json", { cache: "no-store" });
+    if (!r.ok) r = await fetch("/files/stage_panel.example.json", { cache: "no-store" });
+    if (r.ok) { panel = await r.json(); renderPanel(); }
+  } catch {}
+}
+loadPanel(); setInterval(loadPanel, 60000);
+
+function attachVideo(userId) {
+  const box = $("videoBox");
+  if (box.querySelector(`[data-uid="${CSS.escape(userId)}"]`)) return;
+  const video = document.createElement("video");
+  video.autoplay = true; video.playsInline = true; video.muted = true; video.dataset.uid = userId;
+  const orient = () => { if (video.videoWidth) document.documentElement.dataset.orient = video.videoWidth > video.videoHeight ? "landscape" : "portrait"; };
+  video.addEventListener("loadedmetadata", orient);
+  video.addEventListener("resize", orient);
+  box.innerHTML = ""; box.append(video);
+  engine.setRemoteViewConfig(video, userId, 1);
+  video.play().catch(() => {});
+  $("placeholder").style.display = "none"; $("placeholderText").style.display = "none";
+  report("remote_video", userId);
+}
+
+function detachVideo(userId) {
+  const v = $("videoBox").querySelector(`[data-uid="${CSS.escape(userId)}"]`);
+  if (v) { engine?.setRemoteViewConfig(null, userId, 1); v.remove(); }
+  if (!$("videoBox").querySelector("video")) { $("placeholder").style.display = ""; $("placeholderText").style.display = ""; }
+}
+
+async function call(name, ...args) {
+  if (typeof engine[name] !== "function") return;
+  try { return await engine[name](...args); } catch (error) { report("rtc", `optional ${name} failed: ${error.message || error}`); }
+}
+function withTimeout(promise, ms, label) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error(`${label}超过 ${ms / 1000} 秒没有响应`)), ms))]);
+}
+
+async function claimAndJoin(liveId) {
+  // Without the SDK this page cannot show anything; don't take the only seat from a page that could.
+  if (!window.AliRtcEngine) {
+    showError("阿里云 RTC 脚本没加载出来，刷新一下这个页面再试", true);
+    report("error", "阿里云 RTC 脚本没加载出来，没有入会");
+    retry.at = Date.now() + 10000;
+    return;
+  }
+  joining = true;
+  try {
+    const resp = await post("/api/stage/claim", { client_id: CLIENT_ID, role: ROLE });
+    const body = await resp.json();
+    if (!resp.ok) {
+      showError(`${body.error}。${LAYER === "avatar" ? "这个图层暂时没有画面。" : "这里只显示叠层，不入会。"}`);
+      retry.at = Date.now() + 10000;
+      joining = false;
+      return;
+    }
+    joining = false;
+    await joinRtc(body.rtc, liveId);
+  } catch (error) { joining = false; retry.at = Date.now() + 5000; }
+}
+
+async function joinRtc(rtc, liveId) {
+  joining = true; showError("");
+  try {
+    if (rtc.provider && rtc.provider !== "artc") throw new Error(`舞台页目前只接了阿里云 RTC（artc），本场是 ${rtc.provider}`);
+    if (!window.AliRtcEngine) throw new Error("阿里云 RTC 脚本没加载出来，刷新一下这个页面");
+    const support = await withTimeout(window.AliRtcEngine.isSupported(), 10000, "浏览器 WebRTC 检测");
+    if (!support.support) throw new Error(`当前浏览器不支持 AliRTC：${support.reason || "unknown"}`);
+    window.AliRtcEngine.setLogLevel(3);
+    engine = window.AliRtcEngine.getInstance();
+    engine.on("videoSubscribeStateChanged", (userId, _old, next) => { if (next === 3) attachVideo(userId); else if (next === 1) detachVideo(userId); });
+    engine.on("remoteUserOffLineNotify", (userId) => detachVideo(userId));
+    engine.on("bye", (code) => { report("left", `bye ${code}`); });
+    engine.on("authInfoWillExpire", () => report("warn", "RTC 鉴权快过期了，需要重新开播"));
+    for (const name of ["bye", "remoteUserOnLineNotify", "remoteUserOffLineNotify", "videoSubscribeStateChanged", "audioSubscribeStateChanged", "connectionStatusChange", "networkQualityChanged"]) {
+      if (name === "networkQualityChanged") continue;
+      engine.on(name, (...args) => report("rtc", `${name} ${JSON.stringify(args).slice(0, 200)}`));
+    }
+    // A broadcast stage only watches: it publishes no mic or camera, so room noise never reaches the avatar.
+    await call("setChannelProfile", "communication");
+    await call("setDefaultPublishLocalAudioStream", false);
+    await call("setDefaultPublishLocalVideoStream", false);
+    await call("setDefaultSubscribeAllRemoteAudioStreams", true);
+    await call("setDefaultSubscribeAllRemoteVideoStreams", true);
+    await withTimeout(engine.joinChannel(rtc.token, rtc.user_id), 20000, "加入 RTC 频道");
+    joinedLive = liveId;
+    report("joined", rtc.channel_id || "");
+  } catch (error) {
+    retry.count += 1;
+    retry.at = Date.now() + 15000 * retry.count;
+    const last = retry.count >= 3;
+    showError(`入会失败：${error.message || error}${last ? "。已停止自动重试，" : `。${15 * retry.count} 秒后自动重试（第 ${retry.count}/3 次失败）`}`, last);
+    report("error", `${error.message || error}（第 ${retry.count} 次）`);
+    try { engine?.destroy(); } catch {}
+    engine = null;
+    if (!last) setTimeout(() => render(state), 15000 * retry.count + 50);
+  } finally { joining = false; }
+}
+
+async function leaveRtc() {
+  // Callers must hold `switching` (or be ending the show) so no join starts until this resolves.
+  const e = engine; engine = null;
+  post("/api/stage/release", { client_id: CLIENT_ID, why: "本场已结束" }).catch(() => {});
+  try { await e.leaveChannel(); } catch {}
+  try { await e.destroy(); } catch {}
+  await new Promise(r => setTimeout(r, 800));  // getInstance() right after destroy can hand back the old in-call engine
+  $("videoBox").innerHTML = ""; $("placeholder").style.display = ""; $("placeholderText").style.display = "";
+}
+
+// ---------- broadcast mode: forward raw avatar media to the server, which composites and pushes ----------
+let push = null;            // { ws, recorder, tracks }
+let pushRetryAt = 0;
+addEventListener("pcstate", (e) => report("rtc", `peerconnection ${e.detail}`));
+addEventListener("remotetrack", (e) => { report("rtc", `remote ${e.detail.kind} track`); if (push && push.tracks.every(t => t.readyState === "ended")) stopPush("轨道已更换"); });
+
+function pickMime() {
+  for (const m of ["video/webm;codecs=h264,opus", "video/webm;codecs=vp8,opus", "video/webm"]) if (window.MediaRecorder && MediaRecorder.isTypeSupported(m)) return m;
+  return "";
+}
+
+function stopPush(why) {
+  if (!push) return;
+  const p = push; push = null;
+  try { p.recorder.state !== "inactive" && p.recorder.stop(); } catch {}
+  try { p.ws.close(); } catch {}
+  report("rtc", `broadcast stopped: ${why}`);
+  pushRetryAt = Date.now() + 3000;
+}
+
+function maybeBroadcast() {
+  const b = state.broadcast;
+  const wanted = b && b.target !== "off" && ["waiting_stage", "live"].includes(state.status);
+  if (!wanted) { if (push) stopPush("推流已关闭或已下播"); return; }
+  if (push || Date.now() < pushRetryAt) return;
+  const video = window.__remote.video && window.__remote.video.readyState === "live" ? window.__remote.video : null;
+  if (!video) return;
+  const audio = window.__remote.audio && window.__remote.audio.readyState === "live" ? window.__remote.audio : null;
+  const mime = pickMime();
+  const tracks = audio ? [video, audio] : [video];
+  const settings = video.getSettings();
+  const ws = new WebSocket(`${location.origin.replace("http", "ws")}/api/broadcast/ingest`);
+  ws.binaryType = "arraybuffer";
+  const recorder = new MediaRecorder(new MediaStream(tracks), { mimeType: mime, videoBitsPerSecond: 4_000_000, audioBitsPerSecond: 128_000 });
+  push = { ws, recorder, tracks };
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ mime, hasAudio: !!audio, width: settings.width, height: settings.height }));
+    recorder.ondataavailable = (e) => { if (e.data.size && ws.readyState === 1) ws.send(e.data); };
+    recorder.start(500);
+    report("rtc", `broadcast started ${mime} audio=${!!audio} ${settings.width}x${settings.height}`);
+  };
+  ws.onclose = (e) => { if (push && push.ws === ws) stopPush(`服务端关闭 ${e.reason || e.code}`); pushRetryAt = Date.now() + 5000; };
+  tracks.forEach(t => t.addEventListener("ended", () => { if (push && push.tracks.includes(t)) stopPush(`${t.kind} 轨道结束`); }));
+}
+if (BROADCAST) setInterval(() => state.status && maybeBroadcast(), 2000);
+
+function connect() {
+  const es = new EventSource("/api/events");
+  es.addEventListener("state", (e) => render(JSON.parse(e.data)));
+  es.addEventListener("subtitle", (e) => { $("subtitle").textContent = JSON.parse(e.data).text; });
+  es.onerror = () => { es.close(); setTimeout(connect, 2000); };
+}
+connect();
+</script>
+</body>
+</html>

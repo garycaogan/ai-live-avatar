@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>AI 直播工作台 · 深海圈</title>
+<link rel="stylesheet" href="/static/workbench.css">
+<script src="/static/workbench.js" defer></script>
+</head>
+<body>
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-live" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.2"/><path d="M8.5 15.5a5 5 0 0 1 0-7M15.5 8.5a5 5 0 0 1 0 7M5.6 18.4a9 9 0 0 1 0-12.8M18.4 5.6a9 9 0 0 1 0 12.8"/></symbol>
+    <symbol id="i-profiles" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20.5c1.5-3.6 4.5-5.3 8-5.3s6.5 1.7 8 5.3"/></symbol>
+    <symbol id="i-wardrobe" viewBox="0 0 24 24"><path d="M8.5 3.5 4.2 5.8 2.6 10.4l3.2 1.2V20.5h12.4v-8.9l3.2-1.2-1.6-4.6-4.3-2.3a3.5 3.5 0 0 1-7 0Z"/></symbol>
+    <symbol id="i-scene" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="9.5" r="1.8"/><path d="m21 15.5-5-5-9.5 9.5"/></symbol>
+    <symbol id="i-actions" viewBox="0 0 24 24"><circle cx="14.5" cy="4.6" r="1.7"/><path d="M8.5 20.5 11 15l3 2.6v3M5.5 11.5 9 8.4l3.6.6 2.4 3 3.2.6M11 15l1.6-6"/></symbol>
+    <symbol id="i-voice" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
+    <symbol id="i-media" viewBox="0 0 24 24"><path d="M11 3.5 12.7 8l4.5 1.7-4.5 1.7L11 16l-1.7-4.6L4.8 9.7 9.3 8Z"/><path d="m18 14.5.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9Z"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6.5h9.5M18.5 6.5H20M4 12h3.5M12.5 12H20M4 17.5h11M19.5 17.5h.5"/><circle cx="16" cy="6.5" r="2.2"/><circle cx="10" cy="12" r="2.2"/><circle cx="17.3" cy="17.5" r="2.2"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8.5 8.5M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 6.5l4 4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16M20 20v-4h-4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15.5V4M7 9l5-5 5 5M4 15.5V19a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5Z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 11.5 20 4l-6.5 16-2.6-6.9Z"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18.5a4.5 4.5 0 0 1-.6-9 6 6 0 0 1 11.4 1.6 3.8 3.8 0 0 1-.3 7.4M12 12.5v8M9 15.5l3-3 3 3"/></symbol>
+    <symbol id="i-next" viewBox="0 0 24 24"><path d="M6 5.5v13l9-6.5ZM18 5.5v13"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v9.5a1 1 0 0 0 1 1h3.5"/></symbol>
+    <symbol id="i-output" viewBox="0 0 24 24"><rect x="2.5" y="5" width="13" height="10" rx="2"/><path d="M6 19h6M9 15v4M18.5 8a4.6 4.6 0 0 1 0 6M21 5.5a8.2 8.2 0 0 1 0 11"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3.5 21 8l-9 4.5L3 8Z"/><path d="m3 12 9 4.5 9-4.5"/><path d="m3 16 9 4.5 9-4.5"/></symbol>
+    <symbol id="i-laptop" viewBox="0 0 24 24"><rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M3 14.5c2.2 0 2.2-2 4.5-2s2.3 2 4.5 2 2.3-2 4.5-2 2.3 2 4.5 2"/><path d="M3 18.5c2.2 0 2.2-2 4.5-2s2.3 2 4.5 2 2.3-2 4.5-2 2.3 2 4.5 2"/><circle cx="12" cy="7" r="3"/></symbol>
+  </defs>
+</svg>
+
+<a class="skip-link" href="#main">跳到主要内容</a>
+
+<div class="app">
+  <header class="mobile-bar">
+    <div class="brand brand-compact">
+      <span class="brand-mark"><svg class="ico" aria-hidden="true"><use href="#i-logo"/></svg></span>
+      <span class="brand-text"><b>AI 直播工作台</b><small id="mobileTab">直播间</small></span>
+    </div>
+    <span class="status-dot-chip" id="mobileStatus"><span class="dot" aria-hidden="true"></span><span class="label">连接中</span></span>
+    <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="打开导航菜单" aria-expanded="false" aria-controls="sidebar">
+      <svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg>
+    </button>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark"><svg class="ico" aria-hidden="true"><use href="#i-logo"/></svg></span>
+      <span class="brand-text"><b>AI 直播工作台</b><small>深海圈 · 虚拟主播</small></span>
+    </div>
+    <nav aria-label="工作台导航">
+      <ul class="nav-list">
+        <li><button class="nav-item" type="button" data-tab="live"><svg class="ico" aria-hidden="true"><use href="#i-live"/></svg><span>直播间</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="output"><svg class="ico" aria-hidden="true"><use href="#i-output"/></svg><span>推流</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="profiles"><svg class="ico" aria-hidden="true"><use href="#i-profiles"/></svg><span>角色</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="wardrobe"><svg class="ico" aria-hidden="true"><use href="#i-wardrobe"/></svg><span>衣柜</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="scene"><svg class="ico" aria-hidden="true"><use href="#i-scene"/></svg><span>场景</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="actions"><svg class="ico" aria-hidden="true"><use href="#i-actions"/></svg><span>动作</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="voice"><svg class="ico" aria-hidden="true"><use href="#i-voice"/></svg><span>声音</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="media"><svg class="ico" aria-hidden="true"><use href="#i-media"/></svg><span>素材</span></button></li>
+        <li><button class="nav-item" type="button" data-tab="settings"><svg class="ico" aria-hidden="true"><use href="#i-settings"/></svg><span>设置</span></button></li>
+      </ul>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="side-live" id="sideLive">
+        <div class="side-live-row"><span class="dot" aria-hidden="true"></span><b id="sideStatus">连接中</b></div>
+        <div class="side-live-meta"><span id="sideElapsed">0:00</span><span aria-hidden="true">·</span><span id="sideCost">¥0.00</span></div>
+        <div class="side-live-meta" id="sideProfile">—</div>
+      </div>
+      <a class="side-link" href="/console" target="_blank" rel="noopener">旧版控制台<svg class="ico ico-sm" aria-hidden="true"><use href="#i-external"/></svg></a>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1 id="pageTitle" tabindex="-1">直播间</h1>
+        <p id="pageDesc">选角色、启动数字人、看预览，再发几条弹幕测测她的反应</p>
+      </div>
+      <div class="topbar-tools">
+        <label class="ctx-profile" id="ctxWrap" hidden>
+          <span>正在编辑</span>
+          <select id="ctxProfile" aria-label="选择要编辑的角色"></select>
+        </label>
+        <span class="chip" id="topStatus"><span class="dot" aria-hidden="true"></span><span class="label">连接中</span></span>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <noscript><div class="alert alert-error">工作台需要开启 JavaScript。</div></noscript>
+      <div class="alert alert-error conn-alert" id="connAlert" role="alert" hidden></div>
+
+      <!-- ============ 直播间：在本地把数字人跑起来、测它 ============ -->
+      <section class="panel" data-panel="live" aria-labelledby="pageTitle">
+        <section class="card run-bar" aria-labelledby="runTitle">
+          <h2 class="visually-hidden" id="runTitle">启动和停止数字人</h2>
+          <div class="run-controls">
+            <div class="profile-pick">
+              <img id="liveThumb" class="thumb" alt="" width="48" height="64" decoding="async">
+              <label class="field grow">角色
+                <select id="liveProfile"></select>
+              </label>
+            </div>
+            <label class="field run-model">模型
+              <select id="liveModel">
+                <option value="vidu-s2">vidu-s2（能换装换景）</option>
+                <option value="vidu-s1">vidu-s1（稳定，不能换装）</option>
+              </select>
+            </label>
+            <div class="run-btns">
+              <button class="btn btn-primary btn-lg" id="startBtn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>启动数字人</button>
+              <button class="btn btn-danger-solid btn-lg" id="stopBtn" type="button" hidden><svg class="ico" aria-hidden="true"><use href="#i-stop"/></svg>停止数字人</button>
+              <button class="btn btn-lg" id="dryBtn" type="button">空跑演示</button>
+            </div>
+          </div>
+          <div class="run-status">
+            <span class="chip chip-lg" id="sessionStatus"><span class="dot" aria-hidden="true"></span><span class="label">连接中</span></span>
+            <span class="run-stat"><span class="label-muted">已运行</span><b id="mElapsed">0:00</b><span class="run-stat-sub" id="mElapsedSub"></span></span>
+            <span class="run-stat"><span class="label-muted">花费</span><b id="mRmb">¥0.00</b></span>
+            <span class="run-stat run-budget">
+              <span class="label-muted" id="budgetLabel">预算</span>
+              <span class="meter" role="progressbar" aria-labelledby="budgetLabel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meterBudget"><i></i></span>
+              <span class="meter-num" id="meterBudgetNum">0%</span>
+            </span>
+            <a class="run-out" id="runOut" href="#output" hidden><span class="label-muted">画面</span><span id="runOutText">只在本地看</span><svg class="ico ico-sm" aria-hidden="true"><use href="#i-chevron"/></svg></a>
+          </div>
+          <p class="run-sub" id="sessionSub">正在连接本机服务…</p>
+          <div class="alert alert-error" id="sessionAlert" role="alert" hidden></div>
+          <p class="hint" id="keyHint" hidden>没有读到 Vidu Key，只能空跑演示。</p>
+          <div class="swap-banner" id="swapBanner" role="status" hidden>
+            <span class="spinner" aria-hidden="true"></span>
+            <span id="swapText">正在换装…</span>
+          </div>
+        </section>
+
+        <div class="live-grid">
+          <section class="card stage-card" aria-labelledby="stageTitle">
+            <div class="card-head">
+              <h2 id="stageTitle">预览</h2>
+              <button class="btn btn-sm btn-ghost" id="previewToggle" type="button" hidden>断开预览</button>
+            </div>
+            <div class="stage-frame">
+              <iframe id="stageFrame" title="数字人预览，9:16 竖屏" data-src="/stage?embed=1" hidden></iframe>
+              <div class="stage-off" id="stageOff" hidden>
+                <svg class="ico ico-lg" aria-hidden="true"><use href="#i-eye"/></svg>
+                <p>预览已断开，不占入会名额</p>
+                <button class="btn btn-sm btn-light" id="previewOn" type="button">重新连接预览</button>
+              </div>
+              <div class="stage-note" id="stageNote" hidden>
+                <svg class="ico ico-lg" aria-hidden="true"><use href="#i-output"/></svg>
+                <b id="stageNoteTitle">画面在 OBS 里</b>
+                <p id="stageNoteText"></p>
+                <a class="btn btn-sm btn-light" href="#output">去推流页</a>
+              </div>
+            </div>
+            <div class="subtitle-line"><span class="label-muted">她正在说</span><span id="subtitleText">—</span></div>
+            <dl class="look-list">
+              <div><dt>造型</dt><dd id="outfitName">—</dd></div>
+              <div><dt>画面叠加</dt><dd id="visualText">无</dd></div>
+            </dl>
+          </section>
+
+          <div class="live-main">
+            <section class="card" aria-labelledby="dmTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="dmTitle">模拟弹幕</h2>
+                  <p class="card-sub">假装观众发一条，看她怎么接</p>
+                </div>
+              </div>
+              <form id="dmForm" class="stack-sm" novalidate>
+                <div class="input-action">
+                  <label class="field grow"><span class="visually-hidden">弹幕内容</span><input id="dmText" maxlength="60" autocomplete="off" placeholder="比如：跳个舞、换件衣服"></label>
+                  <button class="btn btn-primary" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-send"/></svg>发送</button>
+                </div>
+                <details class="adv" id="dmAdv">
+                  <summary id="dmAdvSum">以「测试观众」发送，不送礼物</summary>
+                  <div class="form-row dm-row">
+                    <label class="field">昵称<input id="dmUser" value="测试观众" maxlength="20" autocomplete="off"></label>
+                    <label class="field">礼物值<input id="dmGift" type="number" min="0" step="1" value="0" inputmode="numeric"></label>
+                  </div>
+                  <p class="hint">礼物值大于 0 的弹幕会优先执行，她还会道谢。</p>
+                </details>
+              </form>
+              <div class="chips" id="dmSamples" role="group" aria-label="常用弹幕，点一下直接发送"></div>
+              <p class="form-msg" id="dmMsg" role="status"></p>
+            </section>
+
+            <section class="card" aria-labelledby="queueTitle">
+              <div class="card-head">
+                <h2 id="queueTitle">正在执行</h2>
+                <button class="btn btn-sm" id="nextBtn" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-next"/></svg>立即执行下一条</button>
+              </div>
+              <div class="now-box">
+                <p class="now-text is-idle" id="nowText">暂无</p>
+                <span class="countdown" id="nextIn">下一条 —</span>
+              </div>
+              <h3 class="sub-head">排队 <span class="count" id="qCount">0</span></h3>
+              <ol class="cmd-list" id="queueList" aria-labelledby="queueTitle"></ol>
+              <p class="empty-row" id="queueEmpty">队列是空的，发条弹幕试试</p>
+            </section>
+
+            <section class="card" aria-labelledby="histTitle">
+              <div class="card-head"><h2 id="histTitle">执行记录 <span class="count" id="hCount">0</span></h2></div>
+              <ol class="cmd-list cmd-list-tall" id="histList" aria-labelledby="histTitle"></ol>
+              <p class="empty-row" id="histEmpty">还没有执行过指令</p>
+            </section>
+          </div>
+        </div>
+
+        <section class="more" aria-labelledby="moreTitle">
+          <h2 class="more-title" id="moreTitle">更多设置</h2>
+          <div class="fold-list">
+            <details class="card fold" data-fold="manual">
+              <summary><span class="fold-text"><span class="fold-title">手动信令</span><span class="fold-sum" id="manualSum">直接让她说一句话或做个动作</span></span></summary>
+              <div class="fold-body">
+                <form id="manualForm" class="stack fold-form" novalidate>
+                  <label class="field">信令
+                    <select id="manualKind">
+                      <option value="text_msg">对话（会回复并做动作）</option>
+                      <option value="text_dialog">只对话</option>
+                      <option value="text_action">只做动作</option>
+                      <option value="text_tts">直接念出来（仅豆包音色）</option>
+                      <option value="interrupt">打断当前说话</option>
+                      <option value="reset">恢复原始造型</option>
+                    </select>
+                  </label>
+                  <div class="input-action">
+                    <label class="field grow">内容<input id="manualText" maxlength="200" autocomplete="off"></label>
+                    <button class="btn btn-primary" id="manualBtn" type="submit">发送</button>
+                  </div>
+                  <p class="hint" id="manualHint">启动数字人（包括等画面入会的时候）后才能发送。</p>
+                </form>
+              </div>
+            </details>
+
+            <details class="card fold" data-fold="sched">
+              <summary><span class="fold-text"><span class="fold-title">调度</span><span class="fold-sum" id="schedSum">多久执行一条弹幕、先挑哪条</span></span></summary>
+              <div class="fold-body">
+                <form id="schedForm" class="stack fold-form" novalidate>
+                  <div class="form-row">
+                    <label class="field">执行间隔（秒）
+                      <input id="interval" type="number" min="5" max="120" step="1" inputmode="numeric">
+                    </label>
+                    <label class="field">冷场多久主动开口（秒）
+                      <input id="idlePrompt" type="number" min="0" max="600" step="1" inputmode="numeric">
+                    </label>
+                  </div>
+                  <label class="field">挑选规则
+                    <select id="policy">
+                      <option value="gift_first_random">礼物优先，其余随机</option>
+                      <option value="gift_first_fifo">礼物优先，其余按先后</option>
+                      <option value="random_recent">纯随机（最近 10 条）</option>
+                      <option value="fifo">纯按先后</option>
+                    </select>
+                  </label>
+                  <p class="hint" id="idleHint">冷场开口填 0 表示关闭。</p>
+                  <div class="form-actions">
+                    <span class="dirty-flag" id="schedDirty" hidden>有未保存的修改</span>
+                    <button class="btn btn-primary" type="submit">保存调度</button>
+                  </div>
+                </form>
+              </div>
+            </details>
+
+            <details class="card fold" data-fold="safe">
+              <summary><span class="fold-text"><span class="fold-title">费用保护</span><span class="fold-sum" id="safeSum">单场时长和预算上限</span></span></summary>
+              <div class="fold-body">
+                <dl class="kv kv-wide">
+                  <div><dt>计费秒数</dt><dd id="mBilled">0</dd></div>
+                  <div><dt>已用积分</dt><dd id="mCredits">0</dd></div>
+                  <div><dt>积分单价</dt><dd id="mRmbSub">—</dd></div>
+                  <div><dt>会话编号</dt><dd class="mono-wrap" id="liveId">—</dd></div>
+                </dl>
+                <div class="meter-row fold-meter">
+                  <span id="timeLabel">时长已用</span>
+                  <span class="meter" role="progressbar" aria-labelledby="timeLabel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meterTime"><i></i></span>
+                  <span class="meter-num" id="meterTimeNum">0%</span>
+                </div>
+                <form id="safeForm" class="stack fold-form" novalidate>
+                  <div class="form-row">
+                    <label class="field">单场最长（分钟）
+                      <input id="maxMinutes" type="number" min="1" max="600" step="1" inputmode="numeric">
+                    </label>
+                    <label class="field">单场预算（积分）
+                      <input id="budgetCredits" type="number" min="1" step="100" inputmode="numeric">
+                    </label>
+                  </div>
+                  <p class="hint" id="safeHint">时长和预算先到哪个，就自动停止数字人。</p>
+                  <div class="form-actions">
+                    <span class="dirty-flag" id="safeDirty" hidden>有未保存的修改</span>
+                    <button class="btn btn-primary" type="submit">保存上限</button>
+                  </div>
+                </form>
+              </div>
+            </details>
+
+            <details class="card fold" data-fold="filtered">
+              <summary><span class="fold-text"><span class="fold-title">已拦截 <span class="count" id="fCount">0</span></span><span class="fold-sum" id="filtSum">没有被拦截的弹幕</span></span></summary>
+              <div class="fold-body">
+                <ol class="cmd-list" id="filtList" aria-label="被拦截的弹幕"></ol>
+                <p class="empty-row" id="filtEmpty">没有被拦截的弹幕</p>
+              </div>
+            </details>
+
+            <details class="card fold" data-fold="log">
+              <summary><span class="fold-text"><span class="fold-title">实时日志</span><span class="fold-sum" id="logSum">本机服务在做什么</span></span></summary>
+              <div class="fold-body">
+                <div class="log-tools">
+                  <label class="check"><input type="checkbox" id="logWarnOnly"><span>只看警告和错误</span></label>
+                  <button class="btn btn-sm btn-ghost" id="logClear" type="button">清屏</button>
+                </div>
+                <div class="log" id="log" aria-live="off" tabindex="0" aria-label="实时日志"></div>
+              </div>
+            </details>
+          </div>
+        </section>
+      </section>
+
+      <!-- ============ 推流：画面最后去哪 ============ -->
+      <section class="panel" data-panel="output" aria-labelledby="pageTitle" hidden>
+        <div class="out-wrap">
+          <div id="outMsg"></div>
+          <div class="alert alert-info" id="outLocked" role="status" hidden>
+            <svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg>
+            <div class="alert-body">数字人正在运行，输出方式现在不能换。先去「直播间」停止数字人，再回来切换。</div>
+            <a class="btn btn-sm" href="#live">去直播间</a>
+          </div>
+
+          <fieldset class="mode-cards" id="outModes">
+            <legend class="visually-hidden">画面输出方式</legend>
+            <label class="mode-card">
+              <input type="radio" name="outMode" value="local" aria-describedby="modeDescLocal">
+              <span class="mode-body">
+                <span class="mode-check" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span>
+                <span class="mode-icon" aria-hidden="true"><svg class="ico"><use href="#i-laptop"/></svg></span>
+                <span class="mode-title">只在本地看</span>
+                <span class="mode-desc" id="modeDescLocal">直播间里的预览就是唯一的画面，什么都不推出去。调角色、试动作时用。</span>
+                <span class="mode-now">正在用</span>
+              </span>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="outMode" value="obs" aria-describedby="modeDescObs">
+              <span class="mode-body">
+                <span class="mode-check" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span>
+                <span class="mode-icon" aria-hidden="true"><svg class="ico"><use href="#i-layers"/></svg></span>
+                <span class="mode-title">用 OBS<span class="tag">推荐</span></span>
+                <span class="mode-desc" id="modeDescObs">画面交给 OBS。叠层、真人摄像头和推流都在 OBS 里摆，最灵活。</span>
+                <span class="mode-now">正在用</span>
+              </span>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="outMode" value="builtin" aria-describedby="modeDescBuiltin">
+              <span class="mode-body">
+                <span class="mode-check" aria-hidden="true"><svg class="ico"><use href="#i-check"/></svg></span>
+                <span class="mode-icon" aria-hidden="true"><svg class="ico"><use href="#i-cloud"/></svg></span>
+                <span class="mode-title">内置推流</span>
+                <span class="mode-desc" id="modeDescBuiltin">不装 OBS。本机服务把画面和弹幕叠层合好，录成文件或推到 YouTube。</span>
+                <span class="mode-now">正在用</span>
+              </span>
+            </label>
+          </fieldset>
+
+          <p class="out-role" id="outRole" hidden></p>
+
+          <!-- 只在本地看 -->
+          <section class="card out-detail" id="outLocal" aria-labelledby="outLocalTitle" hidden>
+            <h2 class="visually-hidden" id="outLocalTitle">只在本地看</h2>
+            <p class="out-line"><svg class="ico" aria-hidden="true"><use href="#i-laptop"/></svg><span>画面只在「直播间」的预览里，这是唯一的一块屏幕，什么都不往外推。</span><a class="btn btn-sm" href="#live">去直播间看</a></p>
+          </section>
+
+          <!-- 用 OBS：选中时展开成卡片，没选中时收起当参考 -->
+          <section class="card out-detail" id="outObs" aria-labelledby="obsTitle" hidden>
+            <div class="card-head">
+              <div>
+                <h2 id="obsTitle">在 OBS 里接画面</h2>
+                <p class="card-sub">每个图层在 OBS 里是一个「浏览器」来源，复制地址粘进去就行</p>
+              </div>
+              <span class="chip" id="obsLocal" hidden>只能在这台 Mac 上用</span>
+            </div>
+            <div id="obsSlot"></div>
+          </section>
+          <details class="card fold" id="obsFold" data-fold="obs" hidden>
+            <summary><span class="fold-text"><span class="fold-title">先看看 OBS 怎么接</span><span class="fold-sum">图层地址、推荐尺寸和接法，切到「用 OBS」后再加进 OBS</span></span></summary>
+            <div class="fold-body" id="obsFoldSlot"></div>
+          </details>
+          <div class="obs-guide" id="obsGuide">
+            <div class="obs-layers">
+              <h3 class="sub-head">图层地址</h3>
+              <div id="obsMsg"></div>
+              <ul class="layer-list" id="obsLayers"></ul>
+            </div>
+            <div class="obs-steps">
+              <h3 class="sub-head">接法</h3>
+              <ol class="steps">
+                <li>在<b>这台 Mac</b> 上打开 OBS。服务只在本机监听，别的电脑上的 OBS 打不开这些地址。</li>
+                <li>每个图层加一个 <span class="ui">浏览器</span> 来源：把上面的地址粘进 URL，宽和高按推荐的填。</li>
+                <li>数字人那一层勾上 <span class="ui">通过 OBS 控制音频</span>，再取消 <span class="ui">当不可见时关闭源</span> 和 <span class="ui">场景变为活动状态时刷新浏览器</span>。</li>
+                <li>真人摄像头用 <span class="ui">视频采集设备</span> 加进来，放在数字人图层下面或旁边，弹幕叠层放最上面。</li>
+                <li>在 OBS 的 <span class="ui">设置 → 直播</span> 里填好平台的推流地址和推流码。</li>
+                <li>回「直播间」点<b>启动数字人</b>，数字人图层有画面了，再在 OBS 里点 <span class="ui">开始直播</span>。</li>
+              </ol>
+              <div class="tips" id="obsTipsWrap" hidden>
+                <h3 class="sub-head">注意</h3>
+                <ul id="obsTips"></ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 内置推流 -->
+          <section class="card out-detail" id="outBuiltin" aria-labelledby="bcTitle" hidden>
+            <div class="card-head">
+              <div>
+                <h2 id="bcTitle">内置推流</h2>
+                <p class="card-sub">本机服务把数字人画面和弹幕叠层合成一路视频</p>
+              </div>
+              <span class="chip" id="bcState"><span class="dot" aria-hidden="true"></span><span class="label">未推流</span></span>
+            </div>
+            <div class="bi-grid">
+              <fieldset class="field">
+                <legend>推到哪</legend>
+                <div class="seg seg-fill" id="bcTarget" role="radiogroup" aria-label="推到哪">
+                  <label><input type="radio" name="bcTarget" value="file"><span>录到文件</span></label>
+                  <label><input type="radio" name="bcTarget" value="youtube"><span>推到 YouTube</span></label>
+                </div>
+                <p class="hint" id="ytHint" hidden>没有 YouTube 推流码，暂时只能录到文件。推流码放在 <code>~/.deepsea/youtube/stream.key</code>。</p>
+              </fieldset>
+              <fieldset class="field">
+                <legend>构图</legend>
+                <div class="seg seg-fill" id="bcLayout" role="radiogroup" aria-label="构图">
+                  <label><input type="radio" name="bcLayout" value="full"><span>全屏</span></label>
+                  <label><input type="radio" name="bcLayout" value="box"><span>小框</span></label>
+                </div>
+                <p class="hint">全屏是数字人铺满竖屏；小框是数字人在上方，下面留给弹幕。从下一段画面开始生效。</p>
+              </fieldset>
+            </div>
+            <div class="bc-page">
+              <div class="bc-page-text">
+                <b>推流舞台页</b>
+                <p class="hint">推流期间这个页面要一直开着：它接收数字人的画面，再转给本机服务编码。关掉它，推出去的就没有画面。单独放一个窗口，别最小化。</p>
+              </div>
+              <button class="btn btn-primary" id="bcOpen" type="button"><svg class="ico" aria-hidden="true"><use href="#i-external"/></svg>打开推流舞台页</button>
+            </div>
+            <dl class="kv kv-5" id="bcStats">
+              <div><dt>帧率</dt><dd id="bcFps">—</dd></div>
+              <div><dt>码率</dt><dd id="bcBitrate">—</dd></div>
+              <div><dt>编码速度</dt><dd id="bcSpeed">—</dd></div>
+              <div><dt>片段</dt><dd id="bcSegments">—</dd></div>
+              <div><dt>画面输入</dt><dd id="bcReceiving">—</dd></div>
+            </dl>
+            <p class="hint mono-wrap bc-out" id="bcOutput" hidden></p>
+            <div class="alert alert-error bc-out" id="bcError" role="alert" hidden></div>
+            <h3 class="sub-head">顺序</h3>
+            <ol class="steps steps-compact">
+              <li>选好推到哪、用什么构图。</li>
+              <li>点「打开推流舞台页」，让它一直开着。</li>
+              <li>回「直播间」点<b>启动数字人</b>，推流舞台页入会后自动开始录或推。</li>
+              <li>停止数字人，推流也跟着停。</li>
+            </ol>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ 角色 ============ -->
+      <section class="panel" data-panel="profiles" aria-labelledby="pageTitle" hidden>
+        <div class="split split-editor">
+          <div class="stack-lg">
+            <div class="toolbar">
+              <p class="toolbar-note" id="profilesNote">加载中…</p>
+              <button class="btn btn-primary" id="newProfileBtn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>新建角色</button>
+            </div>
+            <div id="profilesMsg"></div>
+            <div class="card-grid profile-grid" id="profileGrid"></div>
+          </div>
+
+          <section class="card editor-card" id="profileEditor" aria-labelledby="editorTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="editorTitle">编辑角色</h2>
+                <p class="card-sub" id="editorSub">人设和开场白改完，下次启动数字人时生效</p>
+              </div>
+            </div>
+            <div class="alert alert-info" id="pfInUse" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">这个角色的数字人正在运行，改动下次启动或换装时生效。</div></div>
+            <div id="editorMsg"></div>
+            <form id="profileForm" class="stack" novalidate>
+              <div class="base-pick">
+                <img id="pfImage" class="base-img" alt="" width="96" height="128" decoding="async">
+                <div class="stack-sm">
+                  <span class="label-strong">底图</span>
+                  <p class="hint" id="pfImageHint">角色长相、穿着和场景都以底图为准</p>
+                  <button class="btn btn-sm" id="pfPickBase" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-scene"/></svg>从素材库换底图</button>
+                </div>
+              </div>
+              <label class="field" id="pfKeyWrap" hidden>角色标识
+                <input id="pfKey" maxlength="32" autocomplete="off" spellcheck="false" aria-describedby="pfKeyHint">
+                <span class="hint" id="pfKeyHint">小写字母开头，可用小写字母、数字和下划线，2 到 32 位，例如 my_host。建好后不能改</span>
+              </label>
+              <label class="field" id="pfBaseOutfitWrap" hidden>底图那套衣服叫什么（可选）
+                <input id="pfBaseOutfit" maxlength="12" autocomplete="off" aria-describedby="pfBaseOutfitHint">
+                <span class="hint" id="pfBaseOutfitHint">会成为衣柜里的第一套，不填就叫「日常」</span>
+              </label>
+              <div class="form-row">
+                <label class="field">名字<input id="pfName" maxlength="20" autocomplete="off"></label>
+                <label class="field">音色
+                  <select id="pfVoice"></select>
+                </label>
+              </div>
+              <label class="field">备注<input id="pfNote" maxlength="80" autocomplete="off"></label>
+              <div class="form-row">
+                <label class="field">桌上喝的<input id="pfDeskDrink" maxlength="20" autocomplete="off" placeholder="比如：保温杯"></label>
+                <label class="field">桌上吃的<input id="pfDeskEat" maxlength="20" autocomplete="off" placeholder="比如：那碗瓜子"></label>
+              </div>
+              <span class="hint">底图桌上画着的东西。观众让她吃喝时就拿桌上这个，不再现场生成道具图；留空就照旧生成。</span>
+              <label class="field">开场白指令
+                <textarea id="pfGreeting" rows="2" maxlength="200"></textarea>
+              </label>
+              <label class="field">人设
+                <textarea id="pfPersona" class="textarea-xl" rows="14" maxlength="6000"></textarea>
+                <span class="hint">写成她说话的规矩和碎碎念短句，至少 20 字、最多 6000 字，<code>{name}</code> 会换成角色名字。新建时留空就用默认人设。</span>
+              </label>
+              <div class="form-actions">
+                <span class="dirty-flag" id="pfDirty" hidden>有未保存的修改</span>
+                <button class="btn" id="pfReset" type="button">还原</button>
+                <button class="btn btn-primary" id="pfSave" type="submit">保存角色</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ 衣柜 ============ -->
+      <section class="panel" data-panel="wardrobe" aria-labelledby="pageTitle" hidden>
+        <div class="split split-aside">
+          <section class="card" aria-labelledby="wdTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="wdTitle">衣柜</h2>
+                <p class="card-sub" id="wdSub">—</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm" id="wdFromGallery" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"/></svg>从素材库加入</button>
+                <button class="btn btn-sm" id="wdRegen" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-refresh"/></svg>按新底图重画衣柜</button>
+                <button class="btn btn-sm" id="wdPrewarm" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-cloud"/></svg>预上传到 Vidu</button>
+              </div>
+            </div>
+            <div class="alert alert-info wd-note" id="wdInUse" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">这个角色的数字人正在运行，衣柜改动在下一次换装时生效。</div></div>
+            <div class="alert alert-warn wd-note" id="wdNudge" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">底图刚换过。衣柜里其他衣服还是旧场景，换装时房间和灯光会跳，建议按新底图重画一遍。</div><button class="btn btn-sm" id="wdNudgeGo" type="button">现在重画</button><button class="btn btn-sm btn-ghost" id="wdNudgeX" type="button">先不用</button></div>
+            <div class="progress-note" id="wdPrewarmMsg" role="status" hidden></div>
+            <div id="wdMsg"></div>
+            <div class="card-grid outfit-grid" id="outfitGrid"></div>
+          </section>
+
+          <div class="stack-lg">
+            <section class="card" aria-labelledby="genOutfitTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="genOutfitTitle">生成新衣服</h2>
+                  <p class="card-sub">用当前底图当参考，同一个人同一个场景换一身，生成完自动进衣柜</p>
+                </div>
+              </div>
+              <form id="genOutfitForm" class="stack" novalidate>
+                <label class="field">衣服名字<input id="goName" maxlength="12" autocomplete="off" required></label>
+                <label class="field">别名（可选，逗号分开）
+                  <input id="goAliases" maxlength="160" autocomplete="off" aria-describedby="goAliasHint">
+                  <span class="hint" id="goAliasHint">观众说到这些词也会换上这套，比如：开衫，针织衫</span>
+                </label>
+                <label class="field">描述
+                  <textarea id="goDesc" rows="4" maxlength="400" required aria-describedby="goDescHint"></textarea>
+                  <span class="hint" id="goDescHint">写清款式、颜色、材质，比如：宽松的燕麦色针织开衫，里面白色吊带</span>
+                </label>
+                <label class="field">生图模型
+                  <select id="goModel">
+                    <option value="gpt-image-2.5">gpt-image-2.5</option>
+                    <option value="nano-banana-2.1">nano-banana-2.1</option>
+                  </select>
+                </label>
+                <div class="form-actions">
+                  <button class="btn btn-primary" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-media"/></svg>开始生成</button>
+                </div>
+              </form>
+            </section>
+            <section class="card" aria-labelledby="wdJobsTitle">
+              <div class="card-head"><h2 id="wdJobsTitle">生成任务</h2></div>
+              <div class="job-list" id="wdJobs"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 场景 ============ -->
+      <section class="panel" data-panel="scene" aria-labelledby="pageTitle" hidden>
+        <div class="split split-aside-left">
+          <div class="stack-lg">
+            <section class="card" aria-labelledby="scTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="scTitle">换个场景重画底图</h2>
+                  <p class="card-sub">保持角色长相，按场景描述生成底图候选，满意的再设为底图</p>
+                </div>
+              </div>
+              <div class="current-base">
+                <img id="scBase" class="base-img" alt="" width="96" height="128" decoding="async">
+                <div class="stack-sm">
+                  <span class="label-muted">当前底图</span>
+                  <b id="scBaseName">—</b>
+                </div>
+              </div>
+              <form id="sceneForm" class="stack" novalidate>
+                <div class="field">
+                  <span class="label-strong" id="scPresetLabel">常用场景</span>
+                  <div class="chips" id="scPresets" role="group" aria-labelledby="scPresetLabel"></div>
+                </div>
+                <label class="field">场景描述
+                  <textarea id="scPrompt" rows="5" maxlength="500" required></textarea>
+                </label>
+                <label class="field">生图模型
+                  <select id="scModel">
+                    <option value="gpt-image-2.5">gpt-image-2.5</option>
+                    <option value="nano-banana-2.1">nano-banana-2.1</option>
+                  </select>
+                </label>
+                <div class="form-actions">
+                  <button class="btn btn-primary" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-media"/></svg>生成底图候选</button>
+                </div>
+              </form>
+            </section>
+            <section class="card" aria-labelledby="scJobsTitle">
+              <div class="card-head"><h2 id="scJobsTitle">生成任务</h2></div>
+              <div class="job-list" id="scJobs"></div>
+            </section>
+          </div>
+          <section class="card" aria-labelledby="scCandTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="scCandTitle">底图候选</h2>
+                <p class="card-sub" id="scCandSub">场景生成的图会出现在这里</p>
+              </div>
+              <div class="card-actions">
+                <label class="check"><input type="checkbox" id="scShowAll"><span>显示素材库全部图片</span></label>
+              </div>
+            </div>
+            <div id="scMsg"></div>
+            <div class="card-grid media-grid" id="scGrid"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ 动作 ============ -->
+      <section class="panel" data-panel="actions" aria-labelledby="pageTitle" hidden>
+        <div class="stack-lg">
+          <section class="card" aria-labelledby="idleTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="idleTitle">待机小动作</h2>
+                <p class="card-sub" id="idleSub">没有弹幕时按权重随机做，权重 0.1 到 5，越大越常出现</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm btn-ghost" id="idleRestore" type="button">恢复内置默认</button>
+                <button class="btn btn-sm" id="idleAdd" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"/></svg>添加一行</button>
+              </div>
+            </div>
+            <div class="alert alert-info wd-note" id="idleDefault" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">现在用的是内置默认的一套待机动作。改了保存后，这个角色就用你自己的这套。</div></div>
+            <div class="alert alert-info wd-note" id="idleInUse" role="status" hidden><svg class="ico" aria-hidden="true"><use href="#i-alert"/></svg><div class="alert-body">这个角色的数字人正在运行，待机动作改动下次启动或换装时生效。</div></div>
+            <div id="idleMsg"></div>
+            <div class="edit-table idle-table">
+              <div class="edit-head" aria-hidden="true"><span>名称</span><span>动作指令</span><span>权重</span><span>说明</span><span>操作</span></div>
+              <div id="idleRows"></div>
+            </div>
+            <div class="form-actions">
+              <span class="dirty-flag" id="idleDirty" hidden>有未保存的修改</span>
+              <button class="btn btn-primary" id="idleSave" type="button">保存待机动作</button>
+            </div>
+          </section>
+
+          <section class="card" aria-labelledby="kwTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="kwTitle">弹幕关键词 → 动作</h2>
+                <p class="card-sub">弹幕里出现任一关键词，就让她做对应动作。关键词用逗号分开；动作指令留空就随机做一个</p>
+              </div>
+              <div class="card-actions">
+                <button class="btn btn-sm" id="kwAdd" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"/></svg>添加一行</button>
+              </div>
+            </div>
+            <div id="kwMsg"></div>
+            <div class="edit-table kw-table">
+              <div class="edit-head" aria-hidden="true"><span>关键词</span><span>动作指令</span><span>操作</span></div>
+              <div id="kwRows"></div>
+            </div>
+            <div class="form-actions">
+              <span class="dirty-flag" id="kwDirty" hidden>有未保存的修改</span>
+              <button class="btn btn-primary" id="kwSave" type="button">保存关键词映射</button>
+            </div>
+          </section>
+          <p class="hint">「试一下」直接给正在运行的她发一条只做动作的指令，启动数字人后才能用。</p>
+        </div>
+      </section>
+
+      <!-- ============ 声音 ============ -->
+      <section class="panel" data-panel="voice" aria-labelledby="pageTitle" hidden>
+        <div class="split split-aside">
+          <div class="stack-lg">
+            <section class="card current-voice" aria-labelledby="cvTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="cvTitle">当前音色</h2>
+                  <p class="card-sub" id="cvSub">—</p>
+                </div>
+                <span class="chip chip-brand" id="cvChip">—</span>
+              </div>
+              <div id="voiceMsg"></div>
+            </section>
+            <section class="card" aria-labelledby="sysVoiceTitle">
+              <div class="card-head"><h2 id="sysVoiceTitle">系统音色</h2></div>
+              <div class="voice-grid" id="sysVoices"></div>
+            </section>
+            <section class="card" aria-labelledby="clVoiceTitle">
+              <div class="card-head"><h2 id="clVoiceTitle">克隆音色</h2></div>
+              <div class="voice-grid" id="clVoices"></div>
+            </section>
+          </div>
+
+          <section class="card" aria-labelledby="cloneTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="cloneTitle">克隆新音色</h2>
+                <p class="card-sub">10 到 20 秒干净人声，可以先调速变调试听，满意再克隆（克隆要 20 到 40 秒）</p>
+              </div>
+            </div>
+            <form id="cloneForm" class="stack" novalidate>
+              <div class="field">
+                <span class="label-strong" id="clFileLabel">参考音频</span>
+                <div class="file-pick">
+                  <button class="btn btn-sm" id="clFileBtn" type="button" aria-describedby="clFileLabel clFileName"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-upload"/></svg>选择音频文件</button>
+                  <span class="file-name" id="clFileName">还没选文件</span>
+                </div>
+                <input id="clFile" class="visually-hidden-input" type="file" accept="audio/*" tabindex="-1" aria-hidden="true">
+              </div>
+              <div class="src-alt">
+                <span class="hint">或者用素材库里已有的音频</span>
+                <button class="btn btn-sm" id="clPickGallery" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-voice"/></svg>从素材库选</button>
+              </div>
+              <div class="ref-list" id="clGallery"></div>
+              <div class="audio-box" id="clOrigBox" hidden>
+                <span class="label-muted">原始音频 <span id="clDur"></span></span>
+                <audio id="clOrig" controls preload="metadata"></audio>
+              </div>
+              <p class="form-msg" id="clDurMsg" role="status"></p>
+              <label class="field">音色名字
+                <input id="clName" maxlength="32" autocomplete="off" spellcheck="false" pattern="[A-Za-z][A-Za-z0-9_]{2,31}" aria-describedby="clNameHint" required>
+                <span class="hint" id="clNameHint">英文字母开头，可用字母、数字和下划线，3 到 32 位，例如 my_voice_soft</span>
+              </label>
+              <div class="field">
+                <div class="range-head"><label for="clSpeed">语速</label><output id="clSpeedOut" for="clSpeed">1.00×</output></div>
+                <input id="clSpeed" type="range" min="0.8" max="1.4" step="0.05" value="1">
+              </div>
+              <div class="field">
+                <div class="range-head"><label for="clPitch">音高</label><output id="clPitchOut" for="clPitch">0 半音</output></div>
+                <input id="clPitch" type="range" min="-3" max="3" step="1" value="0">
+              </div>
+              <label class="field">音频里说的话（可选）
+                <textarea id="clText" rows="3" maxlength="500"></textarea>
+                <span class="hint">不填会自动转写；自己填上逐字稿更准</span>
+              </label>
+              <div class="audio-box" id="clPrevBox" hidden>
+                <span class="label-muted">处理后试听</span>
+                <audio id="clPrev" controls preload="none"></audio>
+              </div>
+              <p class="form-msg" id="cloneMsg" role="status"></p>
+              <div class="form-actions">
+                <button class="btn" id="clPreviewBtn" type="button"><svg class="ico" aria-hidden="true"><use href="#i-play"/></svg>试听处理效果</button>
+                <button class="btn btn-primary" id="clCloneBtn" type="submit">克隆</button>
+              </div>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <!-- ============ 素材 ============ -->
+      <section class="panel" data-panel="media" aria-labelledby="pageTitle" hidden>
+        <div class="stack-lg">
+          <div class="gal-toolbar">
+            <div class="gal-heading">
+              <h2 id="galTitle">素材库</h2>
+              <span class="card-sub" id="galSub">—</span>
+            </div>
+            <label class="gal-search">
+              <svg class="ico ico-sm" aria-hidden="true"><use href="#i-search"/></svg>
+              <input type="search" id="galSearch" placeholder="搜名字，比如 白T恤、吊带裙、微笑" aria-label="搜索素材" autocomplete="off">
+            </label>
+            <div class="seg seg-sm" role="radiogroup" aria-label="按类型筛选" id="galFilter">
+              <label><input type="radio" name="galKind" value="all" checked><span>图和视频</span></label>
+              <label><input type="radio" name="galKind" value="image"><span>图片</span></label>
+              <label><input type="radio" name="galKind" value="video"><span>视频</span></label>
+              <label><input type="radio" name="galKind" value="audio"><span>音频</span></label>
+            </div>
+            <div class="seg seg-sm" role="radiogroup" aria-label="图片大小" id="galSize">
+              <label><input type="radio" name="galSize" value="big" checked><span>大图</span></label>
+              <label><input type="radio" name="galSize" value="small"><span>小图</span></label>
+            </div>
+            <button class="icon-btn icon-btn-light" id="galRefresh" type="button" aria-label="刷新素材库"><svg class="ico" aria-hidden="true"><use href="#i-refresh"/></svg></button>
+            <button class="btn btn-primary" id="galCreateBtn" type="button" aria-expanded="false" aria-controls="genPanel"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>生成 / 上传</button>
+          </div>
+
+          <section class="gen-panel" id="genPanel" hidden aria-label="生成和上传">
+          <div class="media-forms">
+            <section class="card" aria-labelledby="giTitle">
+              <div class="card-head"><h2 id="giTitle">生成图片</h2></div>
+              <form id="genImageForm" class="stack" novalidate>
+                <div class="form-row">
+                  <label class="field">模型
+                    <select id="giModel">
+                      <option value="gpt-image-2.5">gpt-image-2.5</option>
+                      <option value="nano-banana-2.1">nano-banana-2.1</option>
+                    </select>
+                  </label>
+                  <fieldset class="field">
+                    <legend>画幅</legend>
+                    <div class="seg seg-fill" role="radiogroup" aria-label="画幅">
+                      <label><input type="radio" name="giSize" value="9:16" checked><span>9:16</span></label>
+                      <label><input type="radio" name="giSize" value="1:1"><span>1:1</span></label>
+                      <label><input type="radio" name="giSize" value="16:9"><span>16:9</span></label>
+                    </div>
+                  </fieldset>
+                </div>
+                <label class="field">画面描述
+                  <textarea id="giPrompt" rows="4" maxlength="1000" required></textarea>
+                </label>
+                <label class="switch">
+                  <input type="checkbox" id="giPhotoReal" checked>
+                  <span class="switch-track" aria-hidden="true"></span>
+                  <span class="switch-text"><b>手机实拍质感</b><small>在描述后面加上真实拍摄的要求，人物不像 CG</small></span>
+                </label>
+                <div class="field">
+                  <span class="label-strong">参考图（可选，最多 4 张）</span>
+                  <div class="ref-list" id="giRefs"></div>
+                  <button class="btn btn-sm" id="giPickRefs" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-plus"/></svg>从素材库选参考图</button>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-primary" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-media"/></svg>生成图片</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card" aria-labelledby="gvTitle">
+              <div class="card-head"><h2 id="gvTitle">生成视频</h2></div>
+              <form id="genVideoForm" class="stack" novalidate>
+                <div class="form-row">
+                  <label class="field">模型
+                    <select id="gvModel">
+                      <option value="seedance-2.0-fast">seedance-2.0-fast</option>
+                      <option value="seedance-2.0">seedance-2.0</option>
+                      <option value="seedance-2.5">seedance-2.5</option>
+                    </select>
+                  </label>
+                  <fieldset class="field">
+                    <legend>清晰度</legend>
+                    <div class="seg seg-fill" role="radiogroup" aria-label="清晰度">
+                      <label><input type="radio" name="gvRes" value="480p" checked><span>480p</span></label>
+                      <label><input type="radio" name="gvRes" value="720p"><span>720p</span></label>
+                    </div>
+                  </fieldset>
+                </div>
+                <fieldset class="field">
+                  <legend>生成方式</legend>
+                  <div class="seg seg-fill" role="radiogroup" aria-label="生成方式">
+                    <label><input type="radio" name="gvMode" value="text" checked><span>文生视频</span></label>
+                    <label><input type="radio" name="gvMode" value="image"><span>图生视频</span></label>
+                    <label><input type="radio" name="gvMode" value="reference"><span>参考生视频</span></label>
+                  </div>
+                </fieldset>
+                <label class="field">画面描述
+                  <textarea id="gvPrompt" rows="3" maxlength="1000" required></textarea>
+                </label>
+                <div class="form-row">
+                  <div class="field">
+                    <span class="label-strong" id="gvImageLabel">参考图片</span>
+                    <div class="ref-list" id="gvImage"></div>
+                    <button class="btn btn-sm" id="gvPickImage" type="button" aria-describedby="gvImageLabel">选图片</button>
+                  </div>
+                  <div class="field">
+                    <span class="label-strong" id="gvAudioLabel">声音参考（仅参考生视频）</span>
+                    <div class="ref-list" id="gvAudio"></div>
+                    <button class="btn btn-sm" id="gvPickAudio" type="button" aria-describedby="gvAudioLabel">选音频</button>
+                  </div>
+                </div>
+                <label class="field">时长（4 到 12 秒）
+                  <input id="gvDuration" type="number" min="4" max="12" step="1" value="5" inputmode="numeric">
+                </label>
+                <div class="form-actions">
+                  <button class="btn btn-primary" type="submit"><svg class="ico" aria-hidden="true"><use href="#i-media"/></svg>生成视频</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="card upload-card" aria-labelledby="upTitle">
+              <div class="card-head"><h2 id="upTitle">上传素材</h2></div>
+              <label class="dropzone" for="upFiles">
+                <svg class="ico ico-lg" aria-hidden="true"><use href="#i-upload"/></svg>
+                <b>选择文件上传</b>
+                <span class="hint">图片、视频或音频，可多选</span>
+              </label>
+              <input id="upFiles" class="visually-hidden-input" type="file" multiple accept="image/*,video/*,audio/*">
+              <p class="form-msg" id="upMsg" role="status"></p>
+            </section>
+          </div>
+          </section>
+
+          <div id="galMsg"></div>
+          <div class="gal-wall" id="galGrid"></div>
+
+          <details class="card jobs-box" id="jobsBox">
+            <summary>
+              <span class="jobs-box-title" id="jobsTitle">生成记录</span>
+              <span class="card-sub" id="jobsSub">有任务在跑时每 3 秒自动刷新</span>
+              <span class="chip" id="jobsSpent" hidden>近 24 小时 ¥0.00</span>
+              <button class="btn btn-sm btn-ghost" id="jobsRefresh" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-refresh"/></svg>刷新</button>
+            </summary>
+            <div class="job-list job-list-wide" id="mediaJobs"></div>
+          </details>
+        </div>
+      </section>
+
+      <!-- ============ 设置 ============ -->
+      <section class="panel" data-panel="settings" aria-labelledby="pageTitle" hidden>
+        <div class="settings-grid">
+          <section class="card" aria-labelledby="envTitle">
+            <div class="card-head"><h2 id="envTitle">运行环境</h2></div>
+            <ul class="status-list" id="envList"></ul>
+            <p class="hint">密钥只在本机服务端读取，不会发到浏览器。Vidu Key 在 <code>~/.deepsea/vidu/api.key</code>，YouTube 推流码在 <code>~/.deepsea/youtube/stream.key</code>。</p>
+          </section>
+          <section class="card" aria-labelledby="apiTitle">
+            <div class="card-head">
+              <div>
+                <h2 id="apiTitle">接口状态</h2>
+                <p class="card-sub">工作台用到的读取接口，未上线的功能会在对应页面提示</p>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="apiRecheck" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-refresh"/></svg>重新检查</button>
+            </div>
+            <ul class="status-list" id="apiList"></ul>
+          </section>
+          <section class="card" aria-labelledby="linkTitle">
+            <div class="card-head"><h2 id="linkTitle">页面入口</h2></div>
+            <ul class="link-list">
+              <li><a href="#output"><b>推流</b><span>画面交给谁：本地看、OBS 的图层地址、内置推流都在这里</span><svg class="ico ico-sm" aria-hidden="true"><use href="#i-chevron"/></svg></a></li>
+              <li><a href="/stage?broadcast=1" target="_blank" rel="noopener"><b>推流舞台页</b><span>只在「内置推流」时用，推流期间要一直开着</span><svg class="ico ico-sm" aria-hidden="true"><use href="#i-external"/></svg></a></li>
+              <li><a href="/console" target="_blank" rel="noopener"><b>旧版控制台</b><span>工作台出问题时的备用入口</span><svg class="ico ico-sm" aria-hidden="true"><use href="#i-external"/></svg></a></li>
+            </ul>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- 素材库选择器 -->
+<dialog class="dialog dialog-wide" id="pickerDialog" aria-labelledby="pickerTitle">
+  <form method="dialog" class="dialog-inner">
+    <div class="dialog-head">
+      <h2 id="pickerTitle">从素材库选择</h2>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <p class="hint" id="pickerHint"></p>
+      <div id="pickerMsg"></div>
+      <div class="card-grid picker-grid" id="pickerGrid"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-sm btn-ghost" id="pickerUpload" type="button"><svg class="ico ico-sm" aria-hidden="true"><use href="#i-upload"/></svg>上传新文件</button>
+      <input id="pickerFile" class="visually-hidden-input" type="file" tabindex="-1">
+      <span class="foot-note" id="pickerCount">未选择</span>
+      <button class="btn" value="cancel">取消</button>
+      <button class="btn btn-primary" value="ok" id="pickerOk">确定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 确认框 -->
+<dialog class="dialog" id="confirmDialog" aria-labelledby="confirmTitle" aria-describedby="confirmMsg">
+  <form method="dialog" class="dialog-inner">
+    <div class="dialog-head">
+      <h2 id="confirmTitle">确认</h2>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body"><p id="confirmMsg"></p></div>
+    <div class="dialog-foot">
+      <button class="btn" value="cancel" id="confirmCancel">取消</button>
+      <button class="btn btn-primary" value="ok" id="confirmOk">确定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 加入衣柜 -->
+<dialog class="dialog" id="outfitDialog" aria-labelledby="outfitDlgTitle">
+  <form method="dialog" class="dialog-inner" id="outfitDlgForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="outfitDlgTitle">加入衣柜</h2>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭" formnovalidate><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="outfit-dlg">
+        <img id="outfitDlgImg" class="base-img" alt="" width="96" height="128" decoding="async">
+        <div class="stack grow">
+          <p class="hint" id="outfitDlgHint"></p>
+          <label class="field">衣服名字<input id="outfitDlgName" maxlength="20" autocomplete="off" required></label>
+          <label class="field">别名（逗号分开）
+            <input id="outfitDlgAliases" maxlength="200" autocomplete="off" aria-describedby="outfitDlgAliasHint">
+            <span class="hint" id="outfitDlgAliasHint">观众说到这些词也会换上这套，比如：卫衣，灰卫衣</span>
+          </label>
+          <p class="form-msg form-msg-error" id="outfitDlgErr" role="alert"></p>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" value="cancel" formnovalidate>取消</button>
+      <button class="btn btn-primary" value="ok" id="outfitDlgOk">加入衣柜</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 设为底图 -->
+<dialog class="dialog" id="baseDialog" aria-labelledby="baseDlgTitle">
+  <form method="dialog" class="dialog-inner" novalidate>
+    <div class="dialog-head">
+      <h2 id="baseDlgTitle">设为底图</h2>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="outfit-dlg">
+        <img id="baseDlgImg" class="base-img" alt="" width="96" height="128" decoding="async">
+        <div class="stack grow">
+          <p class="hint" id="baseDlgHint">角色的长相和场景以底图为准，衣柜里的底图那套也会换成这张。下次启动数字人或换装时生效。</p>
+          <label class="field">底图那套衣服改个名字（可选）
+            <input id="baseDlgName" maxlength="12" autocomplete="off" aria-describedby="baseDlgNameHint">
+            <span class="hint" id="baseDlgNameHint">不填就沿用现在的名字</span>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" value="cancel">取消</button>
+      <button class="btn btn-primary" value="ok">设为底图</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 按新底图重画衣柜 -->
+<dialog class="dialog" id="regenDialog" aria-labelledby="regenTitle">
+  <form method="dialog" class="dialog-inner" id="regenForm" novalidate>
+    <div class="dialog-head">
+      <h2 id="regenTitle">按新底图重画衣柜</h2>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭" formnovalidate><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body stack">
+      <p class="hint">用现在的底图当参考，把选中的衣服各重画一张，房间和灯光就跟底图一致了。每套是一次生图，会产生费用。</p>
+      <label class="field">生图模型
+        <select id="regenModel">
+          <option value="gpt-image-2.5">gpt-image-2.5</option>
+          <option value="nano-banana-2.1">nano-banana-2.1</option>
+        </select>
+      </label>
+      <fieldset class="field">
+        <legend>要重画的衣服</legend>
+        <div class="check-list" id="regenList"></div>
+      </fieldset>
+      <p class="form-msg form-msg-error" id="regenErr" role="alert"></p>
+    </div>
+    <div class="dialog-foot">
+      <span class="foot-note" id="regenCount"></span>
+      <button class="btn" value="cancel" formnovalidate>取消</button>
+      <button class="btn btn-primary" value="ok" id="regenOk">开始重画</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- 大图预览 -->
+<dialog class="dialog dialog-preview" id="previewDialog" aria-labelledby="previewTitle">
+  <form method="dialog" class="dialog-inner">
+    <div class="dialog-head">
+      <h2 id="previewTitle">预览</h2>
+      <span class="hint" id="previewCount"></span>
+      <button class="icon-btn icon-btn-light" value="cancel" aria-label="关闭"><svg class="ico" aria-hidden="true"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="dialog-body preview-body">
+      <button class="lb-nav lb-prev" id="previewPrev" type="button" aria-label="上一张" hidden>‹</button>
+      <div class="lb-media" id="previewBody"></div>
+      <button class="lb-nav lb-next" id="previewNext" type="button" aria-label="下一张" hidden>›</button>
+    </div>
+    <div class="lb-info" id="previewInfo" hidden>
+      <div class="lb-name-row">
+        <input id="previewName" class="lb-name" maxlength="60" aria-label="素材名字，回车保存">
+        <span class="hint" id="previewMeta"></span>
+      </div>
+      <details class="lb-prompt"><summary>生成用的描述</summary><p id="previewPrompt"></p></details>
+      <div class="lb-actions" id="previewActions"></div>
+    </div>
+  </form>
+</dialog>
+
+<div class="toasts">
+  <div id="toastStatus" role="status" aria-live="polite"></div>
+  <div id="toastAlert" role="alert" aria-live="assertive"></div>
+</div>
+</body>
+</html>
