@@ -352,6 +352,8 @@ def build_app(cfg: dict, vidu_key: str | None, evolink_key: str | None,
              "note": "透明背景，只有排队弹幕、正在执行、字幕和倒计时，不占入会名额，可以随便摆。"},
             {"key": "all", "name": "画面加叠层", "url": f"{origin}/stage?obs=1&role=obs&layer=all", "width": 1080, "height": 1920,
              "note": "数字人和叠层合在一起的竖屏，不想自己摆图层时用它。和数字人画面二选一，不要同时加。"},
+            {"key": "overlay_douyin", "name": "抖音横屏叠层", "url": f"{origin}/stage?overlay=1&layout=douyin", "width": 1296, "height": 1080,
+             "note": "抖音横屏开播用：画面就是 1.2:1 的框，说明卡在上面两角，字幕在下方，左下角留给真人摄像头。"},
         ]
         tips = [
             "OBS 要装在这台 Mac 上：服务只在本机监听，别的电脑打不开这些地址。",

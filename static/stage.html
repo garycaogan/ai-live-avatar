@@ -106,6 +106,25 @@ window.__remote = { audio: null, video: null };
   html[data-layer="avatar"] #swapCard, html[data-layer="avatar"] .panel { display: none !important; }
   html[data-layer="avatar"] #placeholderText { font-size: 4vmin; }
   html[data-layer="avatar"] #rtcError { top: 4vmin; left: 4vmin; right: 4vmin; font-size: 2.6vmin; }
+  /* layout=douyin: a landscape 1296x1080 (1.2:1) frame that is the picture itself, like the Douyin reference room,
+     which streams landscape so Douyin shows it in the box above its own comments. Text sits in the corners and
+     along the bottom; the bottom-left corner stays clear for the host's camera; Douyin shows the comments. */
+  html[data-layout="douyin"][data-layer] #videoBox { inset: 0; top: 0; height: auto; }
+  html[data-layout="douyin"] .badge { top: 20px; left: 50%; transform: translateX(-50%); }
+  html[data-layout="douyin"] .pill.ai { font-size: 22px; padding: 8px 16px; gap: 10px; }
+  html[data-layout="douyin"] .pill.ai .dot { width: 10px; height: 10px; }
+  html[data-layout="douyin"] .pill.sub, html[data-layout="douyin"] #countdown, html[data-layout="douyin"] #queueCard,
+  html[data-layout="douyin"] #rules { display: none !important; }
+  html[data-layout="douyin"][data-layer] .panel { top: 20px; background: rgba(6, 25, 36, .58); }
+  html[data-layout="douyin"][data-layer] #infoPanel { left: 20px; width: 340px; }
+  html[data-layout="douyin"][data-layer] #tipsPanel { top: 20px; right: 20px; width: 290px; }
+  html[data-layout="douyin"][data-layer] #current { top: auto; left: 300px; right: 300px; bottom: 104px; padding: 10px 18px; font-size: 24px;
+                                                    text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html[data-layout="douyin"] #current small { display: inline; margin: 0 10px 0 0; font-size: 20px; }
+  html[data-layout="douyin"][data-layer] #subtitle { top: auto; left: 300px; right: 300px; bottom: 30px; font-size: 30px; line-height: 1.4; }
+  html[data-layout="douyin"][data-layer] #swapCard { top: 400px; left: 360px; right: 360px; height: 200px; }
+  html[data-layout="douyin"] #swapCard b { font-size: 40px; } html[data-layout="douyin"] #swapCard span { font-size: 26px; }
+  html[data-layout="douyin"][data-layer] #rtcError { top: 360px; }
   html[data-layer="overlay"], html[data-layer="overlay"] body, html[data-layer="overlay"] #frame { background: transparent; }
   html[data-layer="overlay"] #placeholder, html[data-layer="overlay"] #placeholderText, html[data-layer="overlay"] #videoBox,
   html[data-layer="overlay"] #rtcError, html[data-layer="overlay"] #unlock { display: none !important; }
@@ -150,7 +169,10 @@ const LAYER = params.get("overlay") === "1" ? "overlay" : (["avatar", "all"].inc
 const ROLE = params.get("role") || (BROADCAST ? "broadcast" : "preview");
 const OBS = params.get("obs") === "1" || BROADCAST || LAYER === "overlay";  // no click-to-unmute screen
 const NO_RTC = LAYER === "overlay";
+const DOUYIN = params.get("layout") === "douyin";
+const [FW, FH] = DOUYIN ? [1296, 1080] : [1080, 1920];
 document.documentElement.dataset.layer = LAYER;
+if (DOUYIN) document.documentElement.dataset.layout = "douyin";
 const $ = (id) => document.getElementById(id);
 const KIND = { chat: "聊天", action: "动作", garment: "换装", outfit: "换装", object: "道具", background: "换背景", reset: "复原", gift_thanks: "礼物" };
 let state = {};
@@ -166,10 +188,11 @@ addEventListener("pagehide", () => navigator.sendBeacon("/api/stage/release", ne
 setInterval(() => { if (engine) post("/api/stage/heartbeat", { client_id: CLIENT_ID }).catch(() => {}); }, 5000);
 
 function fit() {
-  if (LAYER === "avatar") return;  // the picture fills the browser source; text layers keep the 1080x1920 design
-  const s = Math.min(innerWidth / 1080, innerHeight / 1920);
+  if (LAYER === "avatar") return;  // the picture fills the browser source; text layers keep their design size
+  const s = Math.min(innerWidth / FW, innerHeight / FH);
   $("frame").style.transform = `translate(-50%, -50%) scale(${s})`;
 }
+if (DOUYIN) { $("frame").style.width = `${FW}px`; $("frame").style.height = `${FH}px`; }
 addEventListener("resize", fit); fit();
 
 if (OBS) $("unlock").remove();

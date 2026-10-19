@@ -189,7 +189,7 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((body["output_mode"], body["stage_role"]), ("obs", "obs"))
         async with self.http.get(self.url + "/api/obs") as resp:
             info = await resp.json()
-        self.assertEqual([l["key"] for l in info["layers"]], ["avatar", "overlay", "all"])
+        self.assertEqual([l["key"] for l in info["layers"]], ["avatar", "overlay", "all", "overlay_douyin"])
         self.assertIn("role=obs", info["layers"][0]["url"])
         await self.post("/api/session/start", {"model": "vidu-s2"})
         self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))

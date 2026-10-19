@@ -53,6 +53,8 @@ class RouterTest(unittest.TestCase):
         ("穿开衫", "garment", "开衫"),
         ("换个高领", "garment", "高领"),
         ("换高领毛衣", "garment", "高领毛衣"),
+        ("换黑色长袖", "garment", "黑色长袖"),
+        ("穿短袖", "garment", "短袖"),
         ("换睡衣", "garment", "睡衣"),
         ("换吊带", "garment", "吊带"),
         ("你的高领好看", "chat", None),
