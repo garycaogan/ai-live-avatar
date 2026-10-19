@@ -55,6 +55,17 @@ IDLE_TOPICS = [
     "发会儿呆，然后小声说一句你刚才在想什么",
 ]
 OUTFIT_TOPIC = "随口提一句可以发弹幕让你换身衣服"
+# Vidu cuts off whatever she is saying when the next line arrives, and sends no speech start/end events. Its
+# type-10 frame is the whole sentence she is about to say, so its length gives the talk time (about 0.23 s a
+# character, measured in the 10/19 show). The cap keeps a runaway estimate from stalling the show.
+SPEECH_SECONDS_PER_CHAR = 0.23
+SPEECH_MAX_SECONDS = 25.0
+SPEECH_GAP_SECONDS = 0.5
+REPLY_WAIT_SECONDS = 8.0  # her line usually arrives 1-3 s after ours; redraws (off by default) took up to 14 s
+
+
+def speech_seconds(text: str, per_char: float = SPEECH_SECONDS_PER_CHAR, cap: float = SPEECH_MAX_SECONDS) -> float:
+    return min(len("".join(text.split())) * per_char, cap)
 
 
 def pick_idle_topic(topics: list[str], used: set[str], last: str = "") -> str:
@@ -166,9 +177,12 @@ class LiveRoom:
         self.billing = {"billed_seconds": 0, "credits_cost": 0, "rmb": 0.0, "estimate_credits": 0.0}
         self.last_exec_at = time.time()
         self.last_idle_at = 0.0
+        self.speaking_until = 0.0  # estimated end of the line she is saying
+        self.reply_due = 0.0       # a line went out and her answer has not arrived yet; wait for it until then
         self.unknown_frames = 0
         self.frame_file: Path | None = None
-        self._kick = asyncio.Event()
+        self._wake = asyncio.Event()  # re-plan the wait: "run next now" pressed, or her answer arrived
+        self._kicked = False
         self._tasks: list[asyncio.Task] = []
 
     # ---------- output ----------
@@ -563,6 +577,8 @@ class LiveRoom:
                 self._schedule_recover(f"Vidu 强制挂断：{labels.get(reason, reason)}")
         elif kind == AVATAR_TRANSCRIPT:
             text = _find_text(payload)
+            if text:
+                self._heard(text)
             if text and not self.swapping:  # the new session's opening line is unheard until the stage switches
                 self.subtitle, self.subtitle_at = text, time.time()
                 self.broadcast("subtitle", {"text": text})
@@ -840,13 +856,7 @@ class LiveRoom:
         while self.status in ("waiting_stage", "live"):
             interval = 4 if first else self.cfg["schedule"]["interval_seconds"]
             first = False
-            self.next_at = time.time() + interval
-            self.broadcast("state")
-            self._kick.clear()
-            try:
-                await asyncio.wait_for(self._kick.wait(), timeout=interval)
-            except asyncio.TimeoutError:
-                pass
+            await self._wait_turn(time.time() + interval)
             if self.status not in ("waiting_stage", "live"):
                 break
             for gone in self.queue.expire():
@@ -857,13 +867,48 @@ class LiveRoom:
             else:
                 await self._maybe_idle()
 
+    async def _wait_turn(self, earliest: float) -> None:
+        """interval_seconds is the shortest gap; after it, wait until she has finished her line, or a warm-up or
+        the next danmaku cuts her off (on 10/19 a recitation stopped after its first sentence). The estimate can
+        move either way while waiting, when her answer arrives. "Run next now" in the console skips both waits."""
+        self._kicked = False
+        while True:
+            due = max(earliest, self._speech_clear_at())
+            if due != self.next_at:
+                self.next_at = due  # the countdown shows the real wait
+                self.broadcast("state")
+            remaining = due - time.time()
+            if remaining <= 0 or self._kicked:
+                return
+            self._wake.clear()
+            try:
+                await asyncio.wait_for(self._wake.wait(), timeout=remaining)
+            except asyncio.TimeoutError:
+                pass
+
+    def _speech_clear_at(self) -> float:
+        gap = self.cfg["schedule"].get("speech_gap_seconds", SPEECH_GAP_SECONDS)
+        return max(self.speaking_until + gap, self.reply_due)
+
+    def _heard(self, text: str) -> None:
+        """Her line arrived: she is saying it from now on. An estimate already running is never cut short."""
+        sched = self.cfg["schedule"]
+        talk = speech_seconds(text, sched.get("speech_seconds_per_char", SPEECH_SECONDS_PER_CHAR),
+                              sched.get("speech_max_seconds", SPEECH_MAX_SECONDS))
+        self.speaking_until = max(self.speaking_until, time.time() + talk)
+        self.reply_due = 0.0
+        self.log("debug", f"数字人这句约 {talk:.1f} 秒", chars=len(text))
+        self._wake.set()
+
     def kick(self) -> None:
-        self._kick.set()
+        self._kicked = True
+        self._wake.set()
 
     async def _maybe_idle(self) -> None:
         idle_after = self.cfg["schedule"]["idle_prompt_after_seconds"]
         now = time.time()
-        if idle_after and now - self.last_exec_at > idle_after and now - self.last_idle_at > idle_after:
+        # Quiet means nothing sent and nothing said: count from the end of her last line, not from when it was asked.
+        if idle_after and now - max(self.last_exec_at, self.last_idle_at, self.speaking_until) > idle_after:
             self.last_idle_at = now
             topics = list(self.avatar_cfg.get("idle_topics") or IDLE_TOPICS)
             wardrobe = self.wardrobe()
@@ -877,6 +922,9 @@ class LiveRoom:
         if self.mode == "dry_run":
             self.log("info", f"[空跑] {label or signal_type}：{content}")
             return
+        if signal_type in (TEXT_MSG, TEXT_DIALOG):  # both get a spoken answer; hold the next line until it comes.
+            # Set before sending: a quick answer can arrive before text() returns.
+            self.reply_due = time.time() + self.cfg["schedule"].get("reply_wait_seconds", REPLY_WAIT_SECONDS)
         await self.channel.text(signal_type, content)
 
     async def _execute(self, cmd: Command) -> None:
@@ -977,6 +1025,7 @@ class LiveRoom:
         if kind == "interrupt":
             if self.mode != "dry_run":
                 await self.channel.interrupt()
+            self.speaking_until = self.reply_due = 0.0  # she stopped; the next line need not wait for the old one
         elif kind == "reset":
             await self._execute(Command("运营", "换回来", "reset"))
         elif kind in signal:

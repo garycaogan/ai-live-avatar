@@ -5,8 +5,9 @@
 """A stand-in for the Vidu realtime API, following the published protocol.
 
 It checks auth, the create-live body and every control frame, answers conn_init
-with NOT_READY once and then success, echoes avatar transcripts for text, and
-acks prompt_operation. No RTC media. Run standalone for manual UI work:
+with NOT_READY once and then success, echoes avatar transcripts for text (or says
+the next line queued in app[REPLIES]), and acks prompt_operation. No RTC media.
+Run standalone for manual UI work:
 
     uv run tests/mock_vidu.py --port 28991
 """
@@ -21,11 +22,12 @@ from aiohttp import WSMsgType, web
 API_KEY = "vda_test_key"
 FRAMES, LIVES, ERRORS = web.AppKey("frames", list), web.AppKey("lives", dict), web.AppKey("errors", list)
 SOCKETS = web.AppKey("sockets", set)
+REPLIES = web.AppKey("replies", list)  # lines she says next, in order, instead of the echo
 
 
 def build_mock() -> web.Application:
     app = web.Application(client_max_size=64 * 1024 * 1024)
-    app[FRAMES], app[LIVES], app[ERRORS], app[SOCKETS] = [], {}, [], set()
+    app[FRAMES], app[LIVES], app[ERRORS], app[SOCKETS], app[REPLIES] = [], {}, [], set(), []
 
     def authed(request) -> bool:
         return request.headers.get("Authorization") == f"Token {API_KEY}"
@@ -108,7 +110,8 @@ def build_mock() -> web.Application:
                 if not content:
                     app[ERRORS].append(f"empty {key}")
                 if kind in (99, 102):
-                    await ws.send_json({"type": 10, "live_id": live_id, "payload": {"transcript": {"text": f"（数字人）好的：{content[:20]}"}}})
+                    line = app[REPLIES].pop(0) if app[REPLIES] else f"（数字人）好的：{content[:20]}"
+                    await ws.send_json({"type": 10, "live_id": live_id, "payload": {"transcript": {"text": line}}})
             elif kind == 11:
                 op = payload.get("prompt_operation") or {}
                 images = op.get("images") or []

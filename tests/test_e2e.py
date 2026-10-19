@@ -24,7 +24,7 @@ from fixtures import ensure_default_avatars  # noqa: E402
 
 ensure_default_avatars()
 import server  # noqa: E402
-from mock_vidu import API_KEY, ERRORS, FRAMES, LIVES, build_mock  # noqa: E402
+from mock_vidu import API_KEY, ERRORS, FRAMES, LIVES, REPLIES, build_mock  # noqa: E402
 
 
 async def serve(app: web.Application) -> tuple[web.AppRunner, str]:
@@ -57,6 +57,7 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         cfg["schedule"]["interval_seconds"] = 1
         cfg["schedule"]["policy"] = "fifo"  # deterministic order for assertions
         cfg["schedule"]["idle_prompt_after_seconds"] = 0
+        cfg["schedule"]["speech_seconds_per_char"] = 0  # the mock echoes every line back; the speech tests set a real rate
         cfg["generator"]["enabled"] = False
         cfg["safety"]["live_visual_edits"] = True  # most tests exercise the redraw path; one checks it stays off by default
         app = server.build_app(cfg, API_KEY, None, assets_dir=assets, work_dir=self.tmp)
@@ -84,6 +85,10 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
 
     def frames(self, kind=None):
         return [f for f in self.mock_app[FRAMES] if kind is None or f["type"] == kind]
+
+    def sent_lines(self):
+        """(send time, content) of every text_msg, from the timestamp the room puts on it."""
+        return [(f["payload"]["text_msg"]["timestamp"] / 1000, f["payload"]["text_msg"]["content"]) for f in self.frames(99)]
 
     async def test_full_show(self):
         status, snap = await self.post("/api/session/start", {"model": "vidu-s2"})
@@ -147,6 +152,43 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         log_files = list((self.tmp / "logs").glob("live-*.jsonl"))
         self.assertEqual(len(log_files), 1)
         self.assertNotIn("base64,", log_files[0].read_text())  # frame log never stores image payloads
+
+    async def test_long_line_is_not_cut_off_by_the_next_danmaku(self):
+        self.room.cfg["schedule"]["speech_seconds_per_char"] = 0.23
+        line = "臣亮言：先帝创业未半而中道崩殂，今天下三分，益州疲弊"
+        talk = len(line) * 0.23  # about 6 s, against a 1 s interval
+        self.mock_app[REPLIES].append(line)
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        await self.post("/api/danmaku", {"user": "阿明", "text": "背一下出师表"})
+        await self.post("/api/danmaku", {"user": "小红", "text": "讲个笑话"})
+        self.assertTrue(await self.wait_for(lambda: len(self.frames(99)) >= 2, timeout=talk + 10))
+        (first_at, first), (second_at, second) = self.sent_lines()[:2]
+        self.assertIn("出师表", first)
+        self.assertIn("讲个笑话", second)
+        # Her line arrives after ours was sent, so this is a floor: nothing goes out while she is still talking.
+        self.assertGreaterEqual(second_at - first_at, talk + 0.5 - 0.01)
+        self.assertLess(second_at - first_at, talk + 3)  # and the show moves on once she is done
+        await self.post("/api/danmaku", {"user": "老王", "text": "唱首歌"})
+        await self.post("/api/next")  # the operator's "run next now" still cuts in
+        self.assertTrue(await self.wait_for(lambda: len(self.frames(99)) >= 3, timeout=2))
+        self.assertIn("唱首歌", self.sent_lines()[2][1])
+        await self.post("/api/session/stop")
+
+    async def test_warmup_waits_too_and_a_long_estimate_is_capped(self):
+        sched = self.room.cfg["schedule"]
+        sched["speech_seconds_per_char"], sched["speech_max_seconds"], sched["idle_prompt_after_seconds"] = 0.23, 3, 1
+        self.mock_app[REPLIES].append("先帝创业未半而中道崩殂" * 11)  # 121 characters, 28 s by length alone
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        await self.post("/api/danmaku", {"user": "阿明", "text": "背一下出师表"})
+        self.assertTrue(await self.wait_for(lambda: len(self.frames(99)) >= 2, timeout=15))
+        (first_at, first), (second_at, second) = self.sent_lines()[:2]
+        self.assertIn("出师表", first)
+        self.assertIn("【暖场】", second)
+        self.assertGreaterEqual(second_at - first_at, 3 + 0.5 - 0.01)  # the warm-up waited for the capped estimate
+        self.assertLess(second_at - first_at, 8)  # and not for the 28 s the length suggests
+        await self.post("/api/session/stop")
 
     async def test_prop_is_put_down_after_use(self):
         self.room.cfg["schedule"]["prop_hold_seconds"] = 0.3
