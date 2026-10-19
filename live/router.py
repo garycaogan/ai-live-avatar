@@ -28,6 +28,7 @@ GARMENT_WORDS = (
     "盔甲 戏服 皇冠 头盔 耳机 工装 厨师服 白大褂 宇航服 熊猫服"
 ).split()
 HAIR_WORDS = "丸子头 双马尾 马尾 卷发 短发 长发 大波浪 寸头 麻花辫 辫子 刘海 发型 头发 发色".split()
+INFO_QUESTION = re.compile(r"(多久|多长时间|冷却|几次|几套|多少套|有哪些|有什么|为什么|为啥|怎么换|怎么才能|是不是|什么时候)")
 GENERIC_GARMENT = {"衣服", "套衣服", "身衣服", "件衣服", "装", "套装", "身装扮", "造型", "个造型", "衣裳"}
 BACKGROUND_WORDS = ("背景", "场景", "换个地方", "换个地点")
 OBJECT_VERBS = (
@@ -202,8 +203,10 @@ def _classify_one(user: str, text: str, gift: float = 0.0) -> Command:
     if any(word in t for word in RESET_WORDS):
         return Command(user, raw, "reset", gift)
 
-    # "我的帽子呢" is a question, not an order; only an imperative verb makes it visual.
+    # "我的帽子呢" is a question, not an order; only an imperative verb makes it visual. Asking about the feature
+    # itself ("换衣服要等多久", "你有几套衣服") is never an order, even with the verb in it.
     visual_ok = not QUESTION_TAIL.search(t) or re.search(r"(换|穿|戴|来|弄|变|染|拿|举|抱|端|捧)", t)
+    visual_ok = visual_ok and not INFO_QUESTION.search(t)
 
     if visual_ok and any(word in t for word in BACKGROUND_WORDS):
         match = re.search(r"(?:换成|变成|改成|换到|变到|换个|换|是|去|到)(?P<item>[^，,。!！?？]{1,12})$", t)

@@ -48,7 +48,8 @@ DEFAULTS = {
     "schedule": {"interval_seconds": 20, "policy": "random_recent", "max_age_seconds": 180, "max_queue": 200,
                  "prop_hold_seconds": 10,
                  "idle_prompt_after_seconds": 45},
-    "safety": {"max_session_minutes": 30, "budget_credits": 3000, "stage_join_timeout_seconds": 90},
+    "safety": {"max_session_minutes": 30, "budget_credits": 3000, "stage_join_timeout_seconds": 90,
+               "live_visual_edits": False},  # background/prop redraws mid-session; see LiveRoom.ingest
     "generator": {"enabled": True, "api_key_file": "~/.deepsea/evolink/api.key", "model": "gpt-image-2.5-sunburst",
                   "resolution": "1K", "quality": "medium", "timeout_seconds": 180},
     "broadcast": {"youtube_key_file": "~/.deepsea/youtube/stream.key", "rtmp_base": "rtmp://a.rtmp.youtube.com/live2",
@@ -270,6 +271,8 @@ def build_app(cfg: dict, vidu_key: str | None, evolink_key: str | None,
             room.queue.policy = body["policy"]
         if "idle_prompt_after_seconds" in body:
             room.cfg["schedule"]["idle_prompt_after_seconds"] = max(0, int(body["idle_prompt_after_seconds"]))
+        if "auto_recover" in body:
+            room.cfg["schedule"]["auto_recover"] = bool(body["auto_recover"])
         room.broadcast("state")
         return web.json_response(room.snapshot())
 

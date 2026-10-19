@@ -142,6 +142,14 @@ def build_mock() -> web.Application:
         app[SOCKETS].clear()
         return web.json_response({"dropped": True})
 
+    async def hangup(request):
+        """Send a force-hangup frame on every control socket, like Vidu ending the show."""
+        body = await request.json() if request.can_read_body else {}
+        for ws in list(app[SOCKETS]):
+            if not ws.closed:
+                await ws.send_json({"type": 6, "payload": {"hangup": {"hangup_reason": body.get("reason", "ai_output_closed")}}})
+        return web.json_response({"hangup": True})
+
     async def frames(_):
         return web.json_response({"frames": app[FRAMES], "errors": app[ERRORS], "lives": list(app[LIVES])})
 
@@ -149,6 +157,7 @@ def build_mock() -> web.Application:
         web.post("/live/v1/avatars", create_avatar), web.get("/live/v1/avatars/{id}", get_avatar),
         web.post("/live/s_avatar/realtime", create_live), web.get("/live/v1/lives/{id}", get_live),
         web.get("/live/ws/live/connect", control), web.get("/_frames", frames), web.post("/_drop", drop),
+        web.post("/_hangup", hangup),
     ])
     return app
 

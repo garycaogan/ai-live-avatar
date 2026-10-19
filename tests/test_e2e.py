@@ -58,6 +58,7 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         cfg["schedule"]["policy"] = "fifo"  # deterministic order for assertions
         cfg["schedule"]["idle_prompt_after_seconds"] = 0
         cfg["generator"]["enabled"] = False
+        cfg["safety"]["live_visual_edits"] = True  # most tests exercise the redraw path; one checks it stays off by default
         app = server.build_app(cfg, API_KEY, None, assets_dir=assets, work_dir=self.tmp)
         self.runner, self.url = await serve(app)
         self.room = app[server.ROOM]
@@ -240,6 +241,44 @@ class EndToEnd(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(await self.wait_for(lambda: any(c.text == "你好" for c in self.room.history)))
         self.assertTrue(any("已重连" in e["message"] for e in self.room.logs))
         await self.post("/api/session/stop")
+
+    async def test_background_and_prop_redraws_are_off_by_default(self):
+        self.room.cfg["safety"]["live_visual_edits"] = False
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        _, result = await self.post("/api/danmaku", {"user": "老王", "text": "去海边吧"})
+        self.assertEqual(result["command"]["kind"], "chat")
+        self.assertTrue(await self.wait_for(lambda: any(c.text == "去海边吧" for c in self.room.history)))
+        self.assertFalse(self.frames(11), "no reference-image switch may reach Vidu")
+        await self.post("/api/session/stop")
+
+    async def test_vidu_hangup_restarts_the_show_when_enabled(self):
+        await self.post("/api/settings", {"auto_recover": True})
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        first = self.room.live["id"]
+        async with self.http.post(self.mock_url + "/_hangup", json={"reason": "ai_output_closed"}) as resp:
+            self.assertEqual(resp.status, 200)
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage" and self.room.live["id"] != first, timeout=20))
+        self.assertTrue(any("自动重新开播" in e["message"] for e in self.room.logs))
+        await self.post("/api/session/stop")
+
+    async def test_vidu_hangup_stays_down_without_auto_recover_or_on_credit(self):
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        async with self.http.post(self.mock_url + "/_hangup", json={"reason": "ai_output_closed"}):
+            pass
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "ended"))
+        await asyncio.sleep(4)
+        self.assertEqual(self.room.status, "ended")  # auto_recover is off by default
+        await self.post("/api/settings", {"auto_recover": True})
+        await self.post("/api/session/start", {"model": "vidu-s2"})
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "waiting_stage"))
+        async with self.http.post(self.mock_url + "/_hangup", json={"reason": "credit_insufficient"}):
+            pass
+        self.assertTrue(await self.wait_for(lambda: self.room.status == "ended"))
+        await asyncio.sleep(4)
+        self.assertEqual(self.room.status, "ended")  # out of credits would only fail again
 
     async def test_outfit_change_hands_over_to_a_new_session(self):
         wardrobe = self.tmp / "outfits.json"

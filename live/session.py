@@ -132,6 +132,12 @@ class LiveRoom:
         self.history: deque = deque(maxlen=60)
         self.filtered: deque = deque(maxlen=60)
         self.output_mode = self._load_output_mode()
+        # The warm-up round outlives sessions: a show restarts the Vidu session after a hang-up, and starting the
+        # round again there repeated topics within minutes in a 2-hour test.
+        self.idle_used: set[str] = set()
+        self.last_idle_topic = ""
+        self.recoveries: list[float] = []  # automatic restarts after Vidu dropped the show, for the hourly cap
+        self._recover_task: asyncio.Task | None = None
         self._reset_session_state()
 
     def _reset_session_state(self) -> None:
@@ -160,8 +166,6 @@ class LiveRoom:
         self.billing = {"billed_seconds": 0, "credits_cost": 0, "rmb": 0.0, "estimate_credits": 0.0}
         self.last_exec_at = time.time()
         self.last_idle_at = 0.0
-        self.idle_used: set[str] = set()
-        self.last_idle_topic = ""
         self.unknown_frames = 0
         self.frame_file: Path | None = None
         self._kick = asyncio.Event()
@@ -233,6 +237,7 @@ class LiveRoom:
             "max_session_minutes": self.cfg["safety"]["max_session_minutes"],
             "credit_price_rmb": self.cfg["vidu"]["credit_price_rmb"],
             "interval_seconds": self.cfg["schedule"]["interval_seconds"], "policy": self.queue.policy,
+            "auto_recover": bool(self.cfg["schedule"].get("auto_recover")),
             "next_in": max(0, round(self.next_at - now)) if self.next_at and self.status in ("waiting_stage", "live") else None,
             "current": self.current.public() if self.current else None,
             "queue": [c.public() for c in self.queue.waiting()],
@@ -290,6 +295,11 @@ class LiveRoom:
             return self._queue_outfit(cmd, wardrobe, garment_part)
         if cmd.kind == "reset" and self.model != "vidu-s2":
             cmd.kind, cmd.note = "chat", "当前模型不支持换装换景，按聊天处理"
+        if cmd.kind in VISUAL_KINDS and not self.cfg["safety"].get("live_visual_edits"):
+            # Backgrounds and props ask Vidu to redraw the running picture from a reference image that does not carry
+            # the outfit. In a public test, two background changes in a row redrew her as if unclothed, so these stay
+            # off unless switched on for a private test; outfits restart from whole photos and are not affected.
+            cmd.kind, cmd.parts, cmd.note = "chat", [], "换背景和道具暂时关闭，按聊天处理"
         if cmd.kind in VISUAL_KINDS:
             if self.model != "vidu-s2":
                 cmd.kind, cmd.parts, cmd.note = "chat", [], "当前模型不支持换装换景，按聊天处理"
@@ -498,6 +508,8 @@ class LiveRoom:
         self._spawn(self._prewarm_wardrobe())
 
     async def stop(self, reason: str = "手动下播") -> dict:
+        if self._recover_task and not self._recover_task.done():  # a manual stop also cancels a pending restart
+            self._recover_task.cancel()
         if self.status not in ACTIVE:
             return self.snapshot()
         self.status, self.end_reason = "ending", reason
@@ -547,6 +559,8 @@ class LiveRoom:
             labels = {"timeout": "会话超时", "audit_violation": "触发 Vidu 风控", "credit_insufficient": "积分不足"}
             self.log("error" if reason != "timeout" else "warn", f"Vidu 强制挂断：{labels.get(reason, reason)}")
             await self._finish(f"Vidu 强制挂断：{labels.get(reason, reason)}")
+            if reason not in ("audit_violation", "credit_insufficient"):  # those would only fail again
+                self._schedule_recover(f"Vidu 强制挂断：{labels.get(reason, reason)}")
         elif kind == AVATAR_TRANSCRIPT:
             text = _find_text(payload)
             if text and not self.swapping:  # the new session's opening line is unheard until the stage switches
@@ -741,6 +755,30 @@ class LiveRoom:
             self.log("info", f"控制通道已重连（第 {attempt} 次）")
             return
         await self._finish(f"控制通道断开且重连失败：{reason}")
+        self._schedule_recover(f"控制通道断开且重连失败：{reason}")
+
+    def _schedule_recover(self, why: str) -> None:
+        """With auto_recover on, a show Vidu dropped starts again by itself (at most 6 times an hour), so a long
+        stream does not need someone watching for hang-ups."""
+        if self.mode != "vidu" or not self.cfg["schedule"].get("auto_recover"):
+            return
+        now = time.time()
+        self.recoveries = [t for t in self.recoveries if now - t < 3600]
+        if len(self.recoveries) >= 6:
+            self.log("error", "一小时内已经自动重新开播 6 次，不再自动重来，请检查 Vidu")
+            return
+        self.recoveries.append(now)
+        self._recover_task = asyncio.create_task(self._recover(why, self.profile, self.ended_at))
+
+    async def _recover(self, why: str, profile: str, ended_at: float | None) -> None:
+        await asyncio.sleep(3)
+        if self.status != "ended" or self.ended_at != ended_at:  # someone started or stopped it meanwhile
+            return
+        self.log("warn", f"{why}，自动重新开播（一小时内第 {len(self.recoveries)} 次）")
+        try:
+            await self.start(profile=profile)
+        except Exception as error:  # noqa: BLE001
+            self.log("error", "自动重新开播失败", error=str(error)[:200])
 
     def claim_stage(self, client_id: str, role: str = "") -> dict:
         """Hand the RTC join credentials to exactly one stage page.

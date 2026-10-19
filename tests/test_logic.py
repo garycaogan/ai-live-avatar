@@ -20,13 +20,13 @@ class ModerationTest(unittest.TestCase):
 
     def test_blocks_suggestive_and_lead_gen(self):
         for text, category in [("站起来看下身材", "低俗擦边"), ("加我微信", "引流广告"), ("V信多少", "引流广告"),
-                               ("穿个黑丝", "低俗擦边"), ("带我赚钱", "收益承诺")]:
+                               ("穿个黑丝", "低俗擦边"), ("带我赚钱", "收益承诺"), ("让我摸一下", "低俗擦边")]:
             verdict = self.m.check("u", text, now=0)
             self.assertFalse(verdict.ok, text)
             self.assertEqual(verdict.category, category, text)
 
     def test_allows_normal_commands_including_colours(self):
-        for text in ["换件衣服", "把头发染成雾霾蓝色", "背景换成海边", "电脑需要什么配置?", "红色的裙子", "你是真人吗"]:
+        for text in ["换件衣服", "把头发染成雾霾蓝色", "背景换成海边", "电脑需要什么配置?", "红色的裙子", "你是真人吗", "今天又摸鱼了"]:
             self.assertTrue(self.m.check("u", text, now=0).ok, text)
 
     def test_dedupe_and_length(self):
@@ -58,6 +58,10 @@ class RouterTest(unittest.TestCase):
         ("换睡衣", "garment", "睡衣"),
         ("换吊带", "garment", "吊带"),
         ("你的高领好看", "chat", None),
+        ("换衣服要等多久", "chat", None),
+        ("换装有冷却时间吗", "chat", None),
+        ("你有几套衣服", "chat", None),
+        ("能换件白T吗", "garment", "白T"),
         ("背景换成海边日落", "background", "海边日落"),
         ("换个背景", "background", None),
         ("去海边吧", "background", "海边"),
