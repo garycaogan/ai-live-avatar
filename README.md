@@ -25,7 +25,7 @@
 
 - macOS 或 Linux，Python 3.11 以上（作者用 3.13），ffmpeg（要带 libx264 和 aac）。
 - Vidu 开放平台的 API Key（`vda_` 开头），账号里要有积分。实时数字人按时长计费，官方价每秒 1.5 积分，1 积分 0.03125 元，一小时大约 169 元。
-- 可选：[Evolink](https://evolink.ai) 的 API Key，用来生成形象图、衣服、道具和背景，以及克隆声音时上传音频。
+- 可选：[Evolink](https://evolink.ai/signup?aff=wPdV)（推荐链接）的 API Key，用来生成形象图、衣服、道具和背景，以及克隆声音时上传音频。
 - 可选：OBS 30 以上，用来加真人摄像头、叠层和推流。
 - 可选：YouTube 推流码，用内置推流时才需要。
 
